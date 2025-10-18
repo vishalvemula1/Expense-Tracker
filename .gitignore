@@ -8,3 +8,10 @@ __pycache__/
 
 # ignore environment files
 .env
+
+#ignore settings and irrelevant files
+.vscode/
+sql_m/
+.copilot/
+
+database.db
