@@ -16,19 +16,19 @@ async def create_user(user: UserCreate, session: SessionDep):
 
     return user_data
 
-@router.get("/{user_id}")
-async def read_user(user: UserReadDep):
+@router.get("/{user_id}", response_model=UserRead)
+async def read_user(user: UserDep):
     return user
 
 
-@router.get("/")
+@router.get("/", response_model=list[UserRead])
 async def read_users(session: SessionDep, 
                      offset: int = 0, 
-                     limit: Annotated[int, Query(le=100)] = 100) -> list[User]:
+                     limit: Annotated[int, Query(le=100)] = 100):
     users = session.exec(select(User).limit(limit).offset(offset)).all()
     return list(users)
 
-@router.put("/{user_id}")
+@router.put("/{user_id}", response_model=UserRead)
 async def update_user(user: UserDep, update_request: UserUpdate, session: SessionDep):
     update_data = update_request.model_dump(exclude_unset=True)
 
@@ -38,9 +38,7 @@ async def update_user(user: UserDep, update_request: UserUpdate, session: Sessio
     session.commit()
     session.refresh(user)
 
-    user_data = UserRead.model_validate(user)
-
-    return user_data
+    return user
 
 @router.delete("/{user_id}")
 async def delete_user(user: UserDep, session: SessionDep):

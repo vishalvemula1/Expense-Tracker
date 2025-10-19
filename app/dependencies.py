@@ -14,16 +14,9 @@ def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDe
         raise HTTPException(status_code=404, detail=f"{model.__name__} was not found")
     return object_data
 
-
-def user_read_dependency(user_id: int, session: SessionDep):
-    user = get_object_or_404(model=User, object_id=user_id, session=session)
-    return UserRead.model_validate(user)
-
 def user_dependency(user_id: int, session: SessionDep):
     return get_object_or_404(model=User, object_id=user_id, session=session)
 
-
-UserReadDep = Annotated[UserRead, Depends(user_read_dependency)]
 UserDep = Annotated[User, Depends(user_dependency)]
 
 def expense_dependency(user_id: int, user: UserDep, expense_id: int, session: SessionDep):
