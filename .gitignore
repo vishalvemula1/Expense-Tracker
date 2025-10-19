@@ -1,19 +1,30 @@
-# ignore virtual environment
-venv/
-.venv/
-# ignore Python cache files
+# ==========================================
+# Python
+# ==========================================
 __pycache__/
 *.pyc
 *.pyo
 
-# ignore environment files
+# Virtual Environments
+venv/
+.venv/
+
+# Environment Variables
 .env
 
-#ignore settings and irrelevant files
+# ==========================================
+# IDE & Development Tools
+# ==========================================
 .vscode/
-sql_m/
 .copilot/
+
+# ==========================================
+# Project-Specific Archives & Data
+# ==========================================
 _archive/
-expense-cr/
+sql_m/
 database.db
+
+# Documentation & Guides
 GIT_FILE_OPERATIONS_GUIDE.md
+
