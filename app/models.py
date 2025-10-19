@@ -20,7 +20,14 @@ class UserRead(UserBase):
 
 class User(UserBase, table=True):
     user_id: int | None = Field(primary_key=True, default=None)
-    password_hash: str
+    password: str
+
+class UserUpdate(UserBase):
+    username: str | None = None
+    email: EmailStr | None = None
+    salary: int | None = None
+    password: str | None = None
+
 
 
 class ExpenseBase(SQLModel):
@@ -43,3 +50,4 @@ class Expense(ExpenseBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     date_of_entry: DateCheck
     date_of_update: Optional[DateCheck] = None
+    user_id: int | None = Field(foreign_key="user.user_id")
