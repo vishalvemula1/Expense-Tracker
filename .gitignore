@@ -13,5 +13,6 @@ __pycache__/
 .vscode/
 sql_m/
 .copilot/
+_archive/
 
 database.db
