@@ -57,8 +57,8 @@ async def add_expense(entry: ExpenseCreate):
     return expense
 
 @app.get("/expenses")
-async def read_expenses(category: str | None = None, 
-                        min_amount: int | None = None, 
+async def read_expenses(category: str | None = None,
+                        min_amount: int | None = None,
                         max_amount: int | None = None):
     filtering = list(expenses.values())
     

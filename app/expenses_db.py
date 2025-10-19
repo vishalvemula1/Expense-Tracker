@@ -56,6 +56,7 @@ class Expense(ExpenseBase, table=True):
 
 #DEPENDENCIES
 ModelType = TypeVar('ModelType', bound=SQLModel)
+
 def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDep):
     object_data = session.get(model, object_id)
     if not object_data:
