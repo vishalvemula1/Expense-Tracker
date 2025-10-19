@@ -4,15 +4,15 @@ from sqlmodel import select
 from typing import Annotated
 from ..models import *
 
-router = APIRouter(prefix="/expenses", tags=["expenses"])
+router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
 
 @router.get("/{expense_id}")
 async def read_an_expense(expense: ExpenseDep):
     return expense
 
 @router.post("/")
-async def add_expense(expense: ExpenseCreate, session: SessionDep):
-    expense_data = Expense.model_validate(expense)
+async def add_expense(user_id: int, expense: ExpenseCreate, user: UserDep, session: SessionDep):
+    expense_data = Expense.model_validate(expense, update={"user_id": user_id})
 
     session.add(expense_data)
     session.commit()
@@ -21,11 +21,18 @@ async def add_expense(expense: ExpenseCreate, session: SessionDep):
     return expense_data
 
 @router.get("/")
-async def read_expenses(session: SessionDep, 
+async def read_expenses(user_id: int,
+                        user: UserDep,
+                        session: SessionDep, 
                         limit: Annotated[int, Query(le=100)] = 5,
                         offset: int = 0) -> list[Expense]:
     
-    expenses = session.exec(select(Expense).limit(limit).offset(offset)).all()
+    expenses = session.exec(
+        select(Expense)
+        .where(Expense.user_id == user_id)
+        .limit(limit)
+        .offset(offset)
+        ).all()
     return list(expenses)
 
 @router.delete("/{expense_id}")

@@ -1,5 +1,4 @@
 from sqlmodel import create_engine, SQLModel, Session
-from fastapi import FastAPI
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"

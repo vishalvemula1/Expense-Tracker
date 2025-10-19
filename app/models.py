@@ -45,9 +45,8 @@ class ExpenseUpdate(ExpenseBase):
     category: str | None = None
     description: str | None = None
 
-
 class Expense(ExpenseBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    expense_id: int | None = Field(default=None, primary_key=True)
     date_of_entry: DateCheck
     date_of_update: Optional[DateCheck] = None
-    user_id: int | None = Field(foreign_key="user.user_id")
+    user_id: int = Field(foreign_key="user.user_id")
