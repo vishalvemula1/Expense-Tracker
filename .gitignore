@@ -14,5 +14,6 @@ __pycache__/
 sql_m/
 .copilot/
 _archive/
-
+expense-cr/
 database.db
+GIT_FILE_OPERATIONS_GUIDE.md
