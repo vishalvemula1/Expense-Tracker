@@ -22,7 +22,7 @@ UserDep = Annotated[User, Depends(user_dependency)]
 def expense_dependency(user_id: int, user: UserDep, expense_id: int, session: SessionDep):
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Unauthorized access")
+        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
     return data
     
 
