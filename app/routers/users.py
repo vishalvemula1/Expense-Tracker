@@ -3,12 +3,18 @@ from fastapi import APIRouter, Query
 from typing import Annotated
 from sqlmodel import select
 from ..models import *
+from ..auth import fake_hash_password
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/")
 async def create_user(user: UserCreate, session: SessionDep):
-    user_data = User.model_validate(user)
+    original_password = user.password
+    create_data = user.model_dump(exclude={"password"})
+    hashed_password = fake_hash_password(original_password)
+
+    user_data = User.model_validate(create_data, update={"password_hash": hashed_password})
 
     session.add(user_data)
     session.commit()
@@ -25,6 +31,7 @@ async def read_user(user: UserDep):
 async def read_users(session: SessionDep, 
                      offset: int = 0, 
                      limit: Annotated[int, Query(le=100)] = 100):
+    
     users = session.exec(select(User).limit(limit).offset(offset)).all()
     return list(users)
 

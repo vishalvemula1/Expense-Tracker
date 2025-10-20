@@ -20,7 +20,7 @@ class UserRead(UserBase):
 
 class User(UserBase, table=True):
     user_id: int | None = Field(primary_key=True, default=None)
-    password: str
+    password_hash: str
 
 class UserUpdate(UserBase):
     username: str | None = None

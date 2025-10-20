@@ -1,8 +1,8 @@
 from typing import Annotated, TypeVar, Type
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends
 from sqlmodel import SQLModel, Session
 from .database import get_session
-from .models import Expense, User, UserRead
+from .models import Expense, User
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
