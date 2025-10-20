@@ -1,7 +1,8 @@
 from typing import Annotated, Optional
-from pydantic import EmailStr
+from pydantic import EmailStr, model_validator
 from datetime import date
 from sqlmodel import Field, SQLModel
+from .auth import fake_hash_password
 
 PositiveAmount = Annotated[float, Field(ge= 0, description="Amount must be greater than zero", default=0)]
 DateCheck = Annotated[date, Field(default_factory=date.today)]
@@ -13,7 +14,6 @@ class UserBase(SQLModel):
 
 class UserCreate(UserBase):
     password: str
-
 
 class UserRead(UserBase):
     user_id: int | None 
@@ -27,9 +27,6 @@ class UserUpdate(UserBase):
     email: EmailStr | None = None
     salary: int | None = None
     password: str | None = None
-
-
-
 class ExpenseBase(SQLModel):
     name: str 
     amount: PositiveAmount

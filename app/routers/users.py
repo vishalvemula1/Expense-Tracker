@@ -8,19 +8,17 @@ from ..auth import fake_hash_password
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/")
+@router.post("/",response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep):
-    original_password = user.password
-    create_data = user.model_dump(exclude={"password"})
-    hashed_password = fake_hash_password(original_password)
+    hashed_password = fake_hash_password(user.password)
+    user_data_dict = user.model_dump(exclude={"password"})
+    new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
 
-    user_data = User.model_validate(create_data, update={"password_hash": hashed_password})
-
-    session.add(user_data)
+    session.add(new_user)
     session.commit()
-    session.refresh(user_data)
+    session.refresh(new_user)
 
-    return user_data
+    return new_user
 
 @router.get("/{user_id}", response_model=UserRead)
 async def read_user(user: UserDep):
@@ -37,14 +35,17 @@ async def read_users(session: SessionDep,
 
 @router.put("/{user_id}", response_model=UserRead)
 async def update_user(user: UserDep, update_request: UserUpdate, session: SessionDep):
-    update_data = update_request.model_dump(exclude_unset=True)
+    update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
+    if update_request.password:
+        hashed_password = fake_hash_password(update_request.password)
+        update_dict['password_hash'] = hashed_password
 
-    user.sqlmodel_update(update_data)
+    user.sqlmodel_update(update_dict)
 
     session.add(user)
     session.commit()
     session.refresh(user)
-
+    print("hello")
     return user
 
 @router.delete("/{user_id}")
