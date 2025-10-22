@@ -4,11 +4,25 @@ from typing import Annotated
 from sqlmodel import select
 from ..models import *
 from ..auth import fake_hash_password
-
+from fastapi.security import OAuth2PasswordRequestForm
+from ..auth import *
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.post("/",response_model=UserRead)
+@router.post("/login")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
+                session: SessionDep):
+    user = authenticate_user(form_data.username, form_data.password, session)
+    if not user:
+        raise HTTPException(status_code=401, detail="username or password wrong")
+    
+    token = create_token(user.user_id) # pyright: ignore[reportArgumentType]
+
+    return {"access_token": token, "token_type": "bearer"}
+    
+
+
+@router.post("/signup",response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep):
     hashed_password = fake_hash_password(user.password)
     user_data_dict = user.model_dump(exclude={"password"})
@@ -21,7 +35,7 @@ async def create_user(user: UserCreate, session: SessionDep):
     return new_user
 
 @router.get("/{user_id}", response_model=UserRead)
-async def read_user(user: UserDep):
+async def read_user(user: UserDep, current_user: CurrentUserDep):
     return user
 
 
@@ -34,7 +48,10 @@ async def read_users(session: SessionDep,
     return list(users)
 
 @router.put("/{user_id}", response_model=UserRead)
-async def update_user(user: UserDep, update_request: UserUpdate, session: SessionDep):
+async def update_user(user: UserDep, 
+                      update_request: UserUpdate, 
+                      session: SessionDep, 
+                      current_user: CurrentUserDep):
     update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
     if update_request.password:
         hashed_password = fake_hash_password(update_request.password)
@@ -49,7 +66,7 @@ async def update_user(user: UserDep, update_request: UserUpdate, session: Sessio
     return user
 
 @router.delete("/{user_id}")
-async def delete_user(user: UserDep, session: SessionDep):
+async def delete_user(user: UserDep, session: SessionDep, current_user: CurrentUserDep):
     session.delete(user)
     session.commit()
 
