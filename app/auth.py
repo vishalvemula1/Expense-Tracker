@@ -1,11 +1,15 @@
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException
 from typing import Annotated
-from .dependencies import SessionDep
 from .models import User
-from sqlmodel import select
+from sqlmodel import select, Session
 import secrets
+from .database import get_session
 
+# SessionDep is a repeated line, dependencies.py already has the exact same alias but importing it doesn't work due to a a circular import issue, 
+# all other solutions to fix the circular import had worse trade-offs
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 active_tokens = {}
 
@@ -34,7 +38,8 @@ def create_token(user_id: int) -> str:
     active_tokens[token] = user_id
     return token
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep):
+async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
+                                 session: SessionDep):
     if token not in active_tokens:
         raise HTTPException(
             status_code=401,
@@ -53,6 +58,3 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
         )
     
     return user
-    
-
-CurrentUserDep = Annotated[User, Depends(get_current_user)]

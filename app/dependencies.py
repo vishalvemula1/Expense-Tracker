@@ -3,6 +3,7 @@ from fastapi import HTTPException, Depends
 from sqlmodel import SQLModel, Session
 from .database import get_session
 from .models import Expense, User
+from .auth import get_authenticated_user
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
@@ -27,3 +28,12 @@ def expense_dependency(user_id: int, user: UserDep, expense_id: int, session: Se
     
 
 ExpenseDep = Annotated[Expense, Depends(expense_dependency)]
+
+AuthenticatedUserDep = Annotated[User, Depends(get_authenticated_user)]
+
+def verify_user(user_id: int, current_user: AuthenticatedUserDep):
+    if current_user.user_id != user_id:
+        raise HTTPException(status_code=401, detail="Not authorized for this request")
+    return current_user
+
+VerifiedOwnerDep = Annotated[User, Depends(verify_user)]  
