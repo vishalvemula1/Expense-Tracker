@@ -1,24 +1,24 @@
 from ..dependencies import *
+from ..models import *
+from ..auth import *
+
 from fastapi import APIRouter, Query
 from typing import Annotated
 from sqlmodel import select
-from ..models import *
-from ..auth import get_password_hash, #create_token
 from fastapi.security import OAuth2PasswordRequestForm
-from ..auth import *
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/login")
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
-                session: SessionDep):
+                session: SessionDep) -> Token:
     user =  authenticate_user(form_data.username, form_data.password, session)
     if not user:
         raise HTTPException(status_code=401, detail="username or password wrong")
     
     token = create_token(user.user_id)  # type: ignore
 
-    return {"access_token": token, "token_type": "bearer"}
+    return Token(access_token=token, token_type="bearer")
     
 
 

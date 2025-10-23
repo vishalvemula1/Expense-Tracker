@@ -14,17 +14,17 @@ def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDe
         raise HTTPException(status_code=404, detail=f"{model.__name__} was not found")
     return object_data
 
-def user_dependency(user_id: int, session: SessionDep):
+def get_user(user_id: int, session: SessionDep):
     return get_object_or_404(model=User, object_id=user_id, session=session)
 
-UserDep = Annotated[User, Depends(user_dependency)]
+UserDep = Annotated[User, Depends(get_user)]
 
-def expense_dependency(user_id: int, user: UserDep, expense_id: int, session: SessionDep):
+def get_expense(user_id: int, user: UserDep, expense_id: int, session: SessionDep):
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
     return data
     
 
-ExpenseDep = Annotated[Expense, Depends(expense_dependency)]
+ExpenseDep = Annotated[Expense, Depends(get_expense)]
 

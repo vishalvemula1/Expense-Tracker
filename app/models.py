@@ -6,6 +6,11 @@ from sqlmodel import Field, SQLModel
 PositiveAmount = Annotated[float, Field(ge= 0, description="Amount must be greater than zero", default=0)]
 DateCheck = Annotated[date, Field(default_factory=date.today)]
 
+class Token(SQLModel):
+    access_token: str
+    token_type: str
+
+
 class UserBase(SQLModel):
     username: str = Field(unique=True)
     email: EmailStr | None = None

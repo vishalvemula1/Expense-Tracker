@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from sqlmodel import select, Session
-import secrets
+from sqlmodel import select
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException
 
@@ -9,14 +8,13 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
-from .dependencies import SessionDep
-from .database import get_session
+from .dependencies import SessionDep, get_user
 from .models import User
 
 
 SECRET_KEY = "0ccad8070c738ed9a9263785947e738201986ec17435411501ad7725992813b9"
 ALGORITHM = "HS256"
-ACESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 active_tokens = {}
 
@@ -24,8 +22,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 pass_hash = PasswordHash.recommended()
 
-# def password_hasher(password: str):
-#     return hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pass_hash.verify(plain_password, hashed_password)
@@ -45,34 +41,37 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
     
     return user
 
-# def create_token(user_id: int) -> str:
-#     token = secrets.token_urlsafe(32)
-#     active_tokens[token] = user_id
-#     return token
+def create_token(user_id: int,
+                expires_delta: timedelta | None = None):
+    to_encode = {"sub":  str(user_id)}
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
 
+    to_encode["exp"] = expire #type: ignore
 
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+    
 
 async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
                                  session: SessionDep):
-    if token not in active_tokens:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+    credentials_excepeption = HTTPException(status_code=401, 
+                                            detail="Could not validate credentials",
+                                            headers={"WWW-Authenticate": "Bearer"})
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_excepeption
+        
+    except InvalidTokenError:
+        raise credentials_excepeption
     
-    user_id = active_tokens[token]
-    user = session.get(User, user_id)
-
-    if not user:
-        active_tokens.pop(token)
-        raise HTTPException(
-            status_code=401, 
-            detail="user not found"
-        )
-    
+    user = get_user(user_id, session=session)
     return user
-
+        
 
 AuthenticatedUserDep = Annotated[User, Depends(get_authenticated_user)]
 
