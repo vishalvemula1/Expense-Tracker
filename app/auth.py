@@ -16,7 +16,6 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-active_tokens = {}
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
