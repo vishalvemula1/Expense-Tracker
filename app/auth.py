@@ -1,25 +1,37 @@
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
-from .models import User
 from sqlmodel import select, Session
 import secrets
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException
+
+import jwt 
+from jwt.exceptions import InvalidTokenError
+from pwdlib import PasswordHash
+
+from .dependencies import SessionDep
 from .database import get_session
+from .models import User
 
-# SessionDep is a repeated line, dependencies.py already has the exact same alias but importing it doesn't work due to a a circular import issue, 
-# all other solutions to fix the circular import had worse trade-offs
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SECRET_KEY = "0ccad8070c738ed9a9263785947e738201986ec17435411501ad7725992813b9"
+ALGORITHM = "HS256"
+ACESS_TOKEN_EXPIRE_MINUTES = 30
 
 active_tokens = {}
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
-def fake_hash_password(password: str):
-    return "fake_hash " + password
+pass_hash = PasswordHash.recommended()
 
-def verify_password(plain_password: str, hash_password: str) -> bool:
-    return fake_hash_password(plain_password) == hash_password
+# def password_hasher(password: str):
+#     return hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pass_hash.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str):
+    return pass_hash.hash(password)
 
 def authenticate_user(username: str, password: str, session: SessionDep) -> User | None:
     statement = select(User).where(User.username == username)
@@ -33,10 +45,12 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
     
     return user
 
-def create_token(user_id: int) -> str:
-    token = secrets.token_urlsafe(32)
-    active_tokens[token] = user_id
-    return token
+# def create_token(user_id: int) -> str:
+#     token = secrets.token_urlsafe(32)
+#     active_tokens[token] = user_id
+#     return token
+
+
 
 async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
                                  session: SessionDep):
@@ -58,3 +72,13 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
         )
     
     return user
+
+
+AuthenticatedUserDep = Annotated[User, Depends(get_authenticated_user)]
+
+def verify_user(user_id: int, current_user: AuthenticatedUserDep):
+    if current_user.user_id != user_id:
+        raise HTTPException(status_code=401, detail="Not authorized for this request")
+    return current_user
+
+VerifiedOwnerDep = Annotated[User, Depends(verify_user)]  

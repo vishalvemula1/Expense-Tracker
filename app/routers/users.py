@@ -3,9 +3,9 @@ from fastapi import APIRouter, Query
 from typing import Annotated
 from sqlmodel import select
 from ..models import *
-from ..auth import fake_hash_password, create_token
+from ..auth import get_password_hash, #create_token
 from fastapi.security import OAuth2PasswordRequestForm
-from ..auth import authenticate_user
+from ..auth import *
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -24,7 +24,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 
 @router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep):
-    hashed_password = fake_hash_password(user.password)
+    hashed_password = get_password_hash(user.password)
     user_data_dict = user.model_dump(exclude={"password"})
     new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
 
@@ -54,7 +54,7 @@ async def update_user(user: UserDep,
                       verification: VerifiedOwnerDep):
     update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
     if update_request.password:
-        hashed_password = fake_hash_password(update_request.password)
+        hashed_password = get_password_hash(update_request.password)
         update_dict['password_hash'] = hashed_password
 
     user.sqlmodel_update(update_dict)
