@@ -11,7 +11,7 @@ venv/
 
 # Environment Variables
 .env
-
+.env.local
 # ==========================================
 # IDE & Development Tools
 # ==========================================
