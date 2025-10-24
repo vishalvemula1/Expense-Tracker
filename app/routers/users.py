@@ -9,10 +9,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+
+
 @router.post("/login")
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
                 session: SessionDep) -> Token:
+    
     user =  authenticate_user(form_data.username, form_data.password, session)
+
     if not user:
         raise HTTPException(status_code=401, detail="username or password wrong")
     
@@ -21,9 +25,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     return Token(access_token=token, token_type="bearer")
     
 
-
 @router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep):
+    
     hashed_password = get_password_hash(user.password)
     user_data_dict = user.model_dump(exclude={"password"})
     new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
@@ -34,9 +38,10 @@ async def create_user(user: UserCreate, session: SessionDep):
 
     return new_user
 
+
 @router.get("/{user_id}", response_model=UserRead)
-async def read_user(user: UserDep, verification: VerifiedOwnerDep):
-    return user
+async def read_user(verified_user: VerifiedOwnerDep):
+    return verified_user
 
 
 @router.get("/", response_model=list[UserRead])
@@ -47,27 +52,29 @@ async def read_users(session: SessionDep,
     users = session.exec(select(User).limit(limit).offset(offset)).all()
     return list(users)
 
+
 @router.put("/{user_id}", response_model=UserRead)
-async def update_user(user: UserDep, 
+async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
-                      session: SessionDep, 
-                      verification: VerifiedOwnerDep):
+                      session: SessionDep):
+    
     update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
     if update_request.password:
         hashed_password = get_password_hash(update_request.password)
         update_dict['password_hash'] = hashed_password
 
-    user.sqlmodel_update(update_dict)
+    verified_user.sqlmodel_update(update_dict)
 
-    session.add(user)
+    session.add(verified_user)
     session.commit()
-    session.refresh(user)
+    session.refresh(verified_user)
     print("hello")
-    return user
+    return verified_user
+
 
 @router.delete("/{user_id}")
-async def delete_user(user: UserDep, session: SessionDep, verification: VerifiedOwnerDep):
-    session.delete(user)
+async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
+    session.delete(verified_user)
     session.commit()
 
     return "Deletion Successful"
