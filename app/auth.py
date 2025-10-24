@@ -56,17 +56,17 @@ def create_token(user_id: int,
 
 async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
                                  session: SessionDep):
-    credentials_excepeption = HTTPException(status_code=401, 
+    credentials_exception = HTTPException(status_code=401, 
                                             detail="Could not validate credentials",
                                             headers={"WWW-Authenticate": "Bearer"})
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
-            raise credentials_excepeption
+            raise credentials_exception
         
     except InvalidTokenError:
-        raise credentials_excepeption
+        raise credentials_exception
     
     user = get_user(user_id, session=session)
     return user

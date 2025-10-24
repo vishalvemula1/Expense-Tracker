@@ -21,7 +21,6 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         raise HTTPException(status_code=401, detail="username or password wrong")
     
     token = create_token(user.user_id)  # type: ignore
-
     return Token(access_token=token, token_type="bearer")
     
 
