@@ -3,20 +3,20 @@ from fastapi import Query, APIRouter
 from sqlmodel import select
 from typing import Annotated
 from ..models import *
-from ..auth import VerifiedOwnerDep
+from ..auth import VerifiedOwnerDep, VerifiedExpenseDep
 
 router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
 
 @router.get("/{expense_id}")
-async def read_an_expense(expense: ExpenseDep, verification: VerifiedOwnerDep) -> Expense:
+async def read_an_expense(expense: VerifiedExpenseDep) -> Expense:
     return expense
 
 @router.post("/")
 async def add_expense(verified_user: VerifiedOwnerDep, 
-                      expense: ExpenseCreate, 
+                      new_expense: ExpenseCreate, 
                       session: SessionDep) -> Expense:
     
-    expense_data = Expense.model_validate(expense, update={"user_id": verified_user.user_id})
+    expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id})
 
     session.add(expense_data)
     session.commit()
@@ -39,8 +39,7 @@ async def read_expenses(verified_user: VerifiedOwnerDep,
     return list(expenses)
 
 @router.delete("/{expense_id}")
-async def delete_expense(expense: ExpenseDep, 
-                         verification: VerifiedOwnerDep, 
+async def delete_expense(expense: VerifiedExpenseDep,  
                          session: SessionDep) -> Expense:
     
     session.delete(expense)
@@ -49,9 +48,8 @@ async def delete_expense(expense: ExpenseDep,
     return expense
 
 @router.put("/{expense_id}")
-async def update_expense(expense: ExpenseDep, 
-                         update_request: ExpenseUpdate, 
-                         verification: VerifiedOwnerDep, 
+async def update_expense(expense: VerifiedExpenseDep, 
+                         update_request: ExpenseUpdate,  
                          session: SessionDep) -> Expense:
     
     update_data = update_request.model_dump(exclude_unset=True)

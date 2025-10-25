@@ -17,14 +17,11 @@ def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDe
 def get_user(user_id: int, session: SessionDep) -> User:
     return get_object_or_404(model=User, object_id=user_id, session=session)
 
-UserDep = Annotated[User, Depends(get_user)]
 
-def get_expense(user_id: int, user: UserDep, expense_id: int, session: SessionDep) -> Expense:
+def get_expense(user_id: int, user: Depends(get_user), expense_id: int, session: SessionDep) -> Expense: # type: ignore
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")
     return data
     
-
-ExpenseDep = Annotated[Expense, Depends(get_expense)]
 

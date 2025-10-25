@@ -8,8 +8,8 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
-from .dependencies import SessionDep, get_user
-from .models import User
+from .dependencies import SessionDep, get_user, get_expense
+from .models import User, Expense
 from .config import settings
 
 SECRET_KEY = settings.SECRET_KEY
@@ -21,6 +21,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 pass_hash = PasswordHash.recommended()
 
+credentials_exception = HTTPException(status_code=401, 
+                                      detail="Could not validate credentials",
+                                      headers={"WWW-Authenticate": "Bearer"})
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pass_hash.verify(plain_password, hashed_password)
@@ -28,15 +31,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     return pass_hash.hash(password)
 
-def authenticate_user(username: str, password: str, session: SessionDep) -> User | None:
+def authenticate_user(username: str, password: str, session: SessionDep) -> User:
     statement = select(User).where(User.username == username)
     user = session.exec(statement).first()
 
     if not user:
-        return None
+        raise credentials_exception
     
     if not verify_password(password, user.password_hash):
-        return None
+        raise credentials_exception
     
     return user
 
@@ -56,9 +59,7 @@ def create_token(user_id: int,
 
 async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
                                  session: SessionDep) -> User:
-    credentials_exception = HTTPException(status_code=401, 
-                                            detail="Could not validate credentials",
-                                            headers={"WWW-Authenticate": "Bearer"})
+    
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
@@ -79,4 +80,9 @@ def verify_user(user_id: int, current_user: AuthenticatedUserDep) -> User:
         raise HTTPException(status_code=401, detail="Not authorized for this request")
     return current_user
 
-VerifiedOwnerDep = Annotated[User, Depends(verify_user)]  
+VerifiedOwnerDep = Annotated[User, Depends(verify_user)]
+
+def verify_expense(expense_id: int, user: VerifiedOwnerDep, session: SessionDep) -> Expense:
+    return get_expense(user_id= user.user_id, user=user, expense_id=expense_id, session=session) # type: ignore
+
+VerifiedExpenseDep = Annotated[Expense, Depends(verify_expense)]
