@@ -1,11 +1,12 @@
 from .auth import verify_user, verify_expense
 from typing import Annotated
 from fastapi import Depends
-from sqlmodel import Session
 from .models import User, Expense
-from .database import get_session
+from .database import SessionDep
 
-SessionDep = Annotated[Session, Depends(get_session)]
+# Re-exported from database for centralized dependency access
+SessionDep = SessionDep
+
 
 VerifiedOwnerDep = Annotated[User, Depends(verify_user)]
 
