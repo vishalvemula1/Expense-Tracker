@@ -25,7 +25,7 @@ pass_hash = PasswordHash.recommended()
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pass_hash.verify(plain_password, hashed_password)
 
-def get_password_hash(password: str):
+def get_password_hash(password: str) -> str:
     return pass_hash.hash(password)
 
 def authenticate_user(username: str, password: str, session: SessionDep) -> User | None:
@@ -41,7 +41,7 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
     return user
 
 def create_token(user_id: int,
-                expires_delta: timedelta | None = None):
+                expires_delta: timedelta | None = None) -> str:
     to_encode = {"sub":  str(user_id)}
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -55,7 +55,7 @@ def create_token(user_id: int,
     
 
 async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
-                                 session: SessionDep):
+                                 session: SessionDep) -> User:
     credentials_exception = HTTPException(status_code=401, 
                                             detail="Could not validate credentials",
                                             headers={"WWW-Authenticate": "Bearer"})
@@ -74,7 +74,7 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
 
 AuthenticatedUserDep = Annotated[User, Depends(get_authenticated_user)]
 
-def verify_user(user_id: int, current_user: AuthenticatedUserDep):
+def verify_user(user_id: int, current_user: AuthenticatedUserDep) -> User:
     if current_user.user_id != user_id:
         raise HTTPException(status_code=401, detail="Not authorized for this request")
     return current_user

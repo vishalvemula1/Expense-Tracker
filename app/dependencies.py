@@ -8,18 +8,18 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 ModelType = TypeVar('ModelType', bound=SQLModel)
 
-def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDep):
+def get_object_or_404(model: Type[ModelType], object_id: int, session: SessionDep) -> ModelType:
     object_data = session.get(model, object_id)
     if not object_data:
         raise HTTPException(status_code=404, detail=f"{model.__name__} was not found")
     return object_data
 
-def get_user(user_id: int, session: SessionDep):
+def get_user(user_id: int, session: SessionDep) -> User:
     return get_object_or_404(model=User, object_id=user_id, session=session)
 
 UserDep = Annotated[User, Depends(get_user)]
 
-def get_expense(user_id: int, user: UserDep, expense_id: int, session: SessionDep):
+def get_expense(user_id: int, user: UserDep, expense_id: int, session: SessionDep) -> Expense:
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user_id:
         raise HTTPException(status_code=403, detail="Not authorized to perform this action")

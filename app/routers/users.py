@@ -25,7 +25,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     
 
 @router.post("/signup", response_model=UserRead)
-async def create_user(user: UserCreate, session: SessionDep):
+async def create_user(user: UserCreate, session: SessionDep) -> User:
     
     hashed_password = get_password_hash(user.password)
     user_data_dict = user.model_dump(exclude={"password"})
@@ -39,14 +39,14 @@ async def create_user(user: UserCreate, session: SessionDep):
 
 
 @router.get("/{user_id}", response_model=UserRead)
-async def read_user(verified_user: VerifiedOwnerDep):
+async def read_user(verified_user: VerifiedOwnerDep) -> User:
     return verified_user
 
 
 @router.get("/", response_model=list[UserRead])
 async def read_users(session: SessionDep, 
                      offset: int = 0, 
-                     limit: Annotated[int, Query(le=100)] = 100):
+                     limit: Annotated[int, Query(le=100)] = 100) -> list[User]:
     
     users = session.exec(select(User).limit(limit).offset(offset)).all()
     return list(users)
@@ -55,7 +55,7 @@ async def read_users(session: SessionDep,
 @router.put("/{user_id}", response_model=UserRead)
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
-                      session: SessionDep):
+                      session: SessionDep) -> User:
     
     update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
     if update_request.password:
@@ -71,7 +71,7 @@ async def update_user(verified_user: VerifiedOwnerDep,
 
 
 @router.delete("/{user_id}")
-async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
+async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep) -> str:
     session.delete(verified_user)
     session.commit()
 
