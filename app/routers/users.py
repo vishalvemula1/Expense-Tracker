@@ -67,7 +67,6 @@ async def update_user(verified_user: VerifiedOwnerDep,
     session.add(verified_user)
     session.commit()
     session.refresh(verified_user)
-    print("hello")
     return verified_user
 
 
