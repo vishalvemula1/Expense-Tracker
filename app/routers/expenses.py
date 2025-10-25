@@ -3,7 +3,6 @@ from fastapi import Query, APIRouter
 from sqlmodel import select
 from typing import Annotated
 from ..models import *
-from ..auth import VerifiedOwnerDep, VerifiedExpenseDep
 
 router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
 

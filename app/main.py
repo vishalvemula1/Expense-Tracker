@@ -10,4 +10,5 @@ def on_startup() -> None:
     create_db_and_tables()
 
 app.include_router(expenses_router)
+
 app.include_router(users_router)

@@ -8,7 +8,8 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
-from .dependencies import SessionDep, get_user, get_expense
+from .database import SessionDep
+from .services import get_user, get_expense
 from .models import User, Expense
 from .config import settings
 
@@ -32,6 +33,7 @@ def get_password_hash(password: str) -> str:
     return pass_hash.hash(password)
 
 def authenticate_user(username: str, password: str, session: SessionDep) -> User:
+     
     statement = select(User).where(User.username == username)
     user = session.exec(statement).first()
 
@@ -49,7 +51,7 @@ def create_token(user_id: int,
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode["exp"] = expire #type: ignore
 
@@ -73,16 +75,11 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
     return user
         
 
-AuthenticatedUserDep = Annotated[User, Depends(get_authenticated_user)]
-
-def verify_user(user_id: int, current_user: AuthenticatedUserDep) -> User:
+def verify_user(user_id: int, current_user: Annotated[User, Depends(get_authenticated_user)]) -> User: 
     if current_user.user_id != user_id:
         raise HTTPException(status_code=401, detail="Not authorized for this request")
     return current_user
 
-VerifiedOwnerDep = Annotated[User, Depends(verify_user)]
 
-def verify_expense(expense_id: int, user: VerifiedOwnerDep, session: SessionDep) -> Expense:
-    return get_expense(user_id= user.user_id, user=user, expense_id=expense_id, session=session) # type: ignore
-
-VerifiedExpenseDep = Annotated[Expense, Depends(verify_expense)]
+def verify_expense(expense_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Expense: 
+    return get_expense(expense_id=expense_id, user=user, session=session) 

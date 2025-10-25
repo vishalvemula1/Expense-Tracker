@@ -1,5 +1,7 @@
 from sqlmodel import create_engine, SQLModel, Session
 from .config import settings
+from typing import Annotated
+from fastapi import Depends
 
 sqlite_file_name = "database.db"
 sqlite_url = settings.DATABASE_URL
@@ -15,3 +17,5 @@ def create_db_and_tables() -> None:
 def get_session():
     with Session(engine) as session:
         yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]

@@ -1,6 +1,6 @@
 from ..dependencies import *
 from ..models import *
-from ..auth import *
+from ..auth import (authenticate_user, get_password_hash, create_token)
 
 from fastapi import APIRouter, Query
 from typing import Annotated
@@ -16,9 +16,6 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                 session: SessionDep) -> Token:
     
     user =  authenticate_user(form_data.username, form_data.password, session)
-
-    if not user:
-        raise HTTPException(status_code=401, detail="username or password wrong")
     
     token = create_token(user.user_id)  # type: ignore
     return Token(access_token=token, token_type="bearer")

@@ -1,16 +1,21 @@
 from typing import Annotated, Optional
-from pydantic import EmailStr, model_validator
+from pydantic import EmailStr
 from datetime import date
 from sqlmodel import Field, SQLModel
 
 PositiveAmount = Annotated[float, Field(ge= 0, description="Amount must be greater than zero", default=0)]
 DateCheck = Annotated[date, Field(default_factory=date.today)]
 
+# ==========================================
+# Token Class
+# ==========================================
 class Token(SQLModel):
     access_token: str
     token_type: str
 
-
+# ==========================================
+# User Tables
+# ==========================================
 class UserBase(SQLModel):
     username: str = Field(unique=True)
     email: EmailStr | None = None
@@ -31,6 +36,10 @@ class UserUpdate(UserBase):
     email: EmailStr | None = None
     salary: int | None = None
     password: str | None = None
+
+# ==========================================
+# Expense Tables
+# ==========================================
 class ExpenseBase(SQLModel):
     name: str 
     amount: PositiveAmount
