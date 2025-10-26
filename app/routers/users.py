@@ -2,10 +2,11 @@ from ..dependencies import *
 from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -24,16 +25,23 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 
 @router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep) -> User:
+    try: 
+        hashed_password = get_password_hash(user.password)
+        user_data_dict = user.model_dump(exclude={"password"})
+        new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
+
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+
+        return new_user
     
-    hashed_password = get_password_hash(user.password)
-    user_data_dict = user.model_dump(exclude={"password"})
-    new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
-
-    session.add(new_user)
-    session.commit()
-    session.refresh(new_user)
-
-    return new_user
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Username already exists"
+        )
 
 
 @router.get("/{user_id}", response_model=UserRead)
