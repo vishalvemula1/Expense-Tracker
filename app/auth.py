@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Any
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
@@ -48,7 +48,7 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
 def create_token(user_id: int,
                 expires_delta: timedelta | None = None) -> str:
     
-    to_encode = {"sub":  str(user_id)}
+    to_encode: dict[str, int] = {"sub":  user_id}
     
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -56,7 +56,7 @@ def create_token(user_id: int,
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode["exp"] = expire #type: ignore
+    to_encode["exp"] = int(expire.timestamp()) 
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -66,7 +66,7 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
                                  session: SessionDep) -> User:
     
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload: dict[str, Any] = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
