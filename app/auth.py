@@ -48,7 +48,7 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
 def create_token(user_id: int,
                 expires_delta: timedelta | None = None) -> str:
     
-    to_encode: dict[str, int] = {"sub":  user_id}
+    to_encode: dict[str, str | int] = {"sub":  str(user_id)}
     
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
