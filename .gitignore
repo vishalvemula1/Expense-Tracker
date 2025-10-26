@@ -4,6 +4,7 @@
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache
 
 # Virtual Environments
 venv/
@@ -28,3 +29,4 @@ database.db
 # Documentation & Guides
 GIT_FILE_OPERATIONS_GUIDE.md
 README.md
+
