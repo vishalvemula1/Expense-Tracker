@@ -1,9 +1,47 @@
 from typing import Annotated, Optional
-from pydantic import EmailStr
+from pydantic import EmailStr, field_validator
 from datetime import date
 from sqlmodel import Field, SQLModel
 
+
+
+# ==========================================
+# Validator Function & Mixins
+# ==========================================
+def validate_no_empty_strings(v):
+    """Strip whitespace and reject empty strings"""
+    if v is None:
+        return v
+    
+    if isinstance(v, str):
+        v = v.strip()
+    
+    if isinstance(v, str) and v == "":
+        raise ValueError("Cannot be empty or whitespace only")
+    
+    return v
+
+class NoEmptyStringsMixinUser:
+    
+    @field_validator("username", "password", "email", mode="before")
+    @classmethod
+    def validate_user_fields(cls, v):
+        return validate_no_empty_strings(v)
+
+class NoEmptyStringsMixinExpense:
+    
+    @field_validator("name", "category", "description", mode="before")
+    @classmethod
+    def validate_expense_fields(cls, v):
+        return validate_no_empty_strings(v)
+    
+
+# ==========================================
+# Type Aliases
+# ==========================================
+
 PositiveAmount = Annotated[float, Field(ge=0, description="Amount must be greater than zero", default=0)]
+
 # ==========================================
 # Token Class
 # ==========================================
@@ -19,7 +57,7 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, description="Email must be unique and have an @")
     salary: PositiveAmount | None
 
-class UserCreate(UserBase):
+class UserCreate(UserBase, NoEmptyStringsMixinUser):
     password: str
 
 class UserRead(UserBase):
@@ -29,11 +67,12 @@ class User(UserBase, table=True):
     user_id: int | None = Field(primary_key=True, default=None, description="Primary key")
     password_hash: str
 
-class UserUpdate(UserBase):
+class UserUpdate(UserBase, NoEmptyStringsMixinUser):
     username: str = Field(unique=True, description="Username must be unique", default=None)
     email: EmailStr = Field(unique=True, description="Email must be unique and have an @", default=None)
     salary: Optional[PositiveAmount] = None
     password: str | None = None
+
 
 # ==========================================
 # Expense Tables
@@ -47,10 +86,10 @@ class ExpenseBase(SQLModel):
     category: str | None = None
     description: str | None = None
 
-class ExpenseCreate(ExpenseBase):
+class ExpenseCreate(ExpenseBase, NoEmptyStringsMixinExpense):
     pass
 
-class ExpenseUpdate(ExpenseBase):
+class ExpenseUpdate(ExpenseBase, NoEmptyStringsMixinExpense):
     name: str | None = None
     amount: Optional[PositiveAmount] = None
     category: str | None = None
