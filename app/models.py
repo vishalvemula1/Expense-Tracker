@@ -18,7 +18,7 @@ class Token(SQLModel):
 # ==========================================
 class UserBase(SQLModel):
     username: str = Field(unique=True)
-    email: EmailStr | None = None
+    email: EmailStr | None = Field(unique=True, default=None)
     salary: int | None
 
 class UserCreate(UserBase):

@@ -40,7 +40,7 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
         session.rollback()
         raise HTTPException(
             status_code=409,
-            detail="Username already exists"
+            detail="Username or email already exists"
         )
 
 
