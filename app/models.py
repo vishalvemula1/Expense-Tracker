@@ -3,9 +3,7 @@ from pydantic import EmailStr
 from datetime import date
 from sqlmodel import Field, SQLModel
 
-PositiveAmount = Annotated[float, Field(ge= 0, description="Amount must be greater than zero", default=0)]
-DateCheck = Annotated[date, Field(default_factory=date.today)]
-
+PositiveAmount = Annotated[float, Field(ge=0, description="Amount must be greater than zero", default=0)]
 # ==========================================
 # Token Class
 # ==========================================
@@ -17,9 +15,9 @@ class Token(SQLModel):
 # User Tables
 # ==========================================
 class UserBase(SQLModel):
-    username: str = Field(unique=True)
-    email: EmailStr | None = Field(unique=True, default=None)
-    salary: int | None
+    username: str = Field(unique=True, description="Username must be unique")
+    email: EmailStr = Field(unique=True, description="Email must be unique and have an @")
+    salary: PositiveAmount | None
 
 class UserCreate(UserBase):
     password: str
@@ -28,18 +26,21 @@ class UserRead(UserBase):
     user_id: int | None 
 
 class User(UserBase, table=True):
-    user_id: int | None = Field(primary_key=True, default=None)
+    user_id: int | None = Field(primary_key=True, default=None, description="Primary key")
     password_hash: str
 
 class UserUpdate(UserBase):
-    username: str | None = None
-    email: EmailStr | None = None
-    salary: int | None = None
+    username: str = Field(unique=True, description="Username must be unique", default=None)
+    email: EmailStr = Field(unique=True, description="Email must be unique and have an @", default=None)
+    salary: Optional[PositiveAmount] = None
     password: str | None = None
 
 # ==========================================
 # Expense Tables
 # ==========================================
+#------Aliases-----------
+DateCheck = Annotated[date, Field(default_factory=date.today)]
+#-----------------------
 class ExpenseBase(SQLModel):
     name: str 
     amount: PositiveAmount
@@ -56,7 +57,7 @@ class ExpenseUpdate(ExpenseBase):
     description: str | None = None
 
 class Expense(ExpenseBase, table=True):
-    expense_id: int | None = Field(default=None, primary_key=True)
+    expense_id: int | None = Field(primary_key=True, default=None, description="Primary key")
     date_of_entry: DateCheck
     date_of_update: Optional[DateCheck] = None
     user_id: int = Field(foreign_key="user.user_id")

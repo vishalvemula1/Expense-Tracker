@@ -62,18 +62,25 @@ async def read_users(session: SessionDep,
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
                       session: SessionDep) -> User:
-    
-    update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
-    if update_request.password:
-        hashed_password = get_password_hash(update_request.password)
-        update_dict['password_hash'] = hashed_password
+    try:
+        update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
+        if update_request.password:
+            hashed_password = get_password_hash(update_request.password)
+            update_dict['password_hash'] = hashed_password
 
-    verified_user.sqlmodel_update(update_dict)
+        verified_user.sqlmodel_update(update_dict)
 
-    session.add(verified_user)
-    session.commit()
-    session.refresh(verified_user)
-    return verified_user
+        session.add(verified_user)
+        session.commit()
+        session.refresh(verified_user)
+        return verified_user
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Username or email already exists"
+        )
 
 
 @router.delete("/{user_id}")
