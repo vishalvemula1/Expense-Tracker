@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 
 import jwt 
 from jwt.exceptions import InvalidTokenError
@@ -38,10 +38,10 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
     user = session.exec(statement).first()
 
     if not user:
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     
     if not verify_password(password, user.password_hash):
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     
     return user
 
