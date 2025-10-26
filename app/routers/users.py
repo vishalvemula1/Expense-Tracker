@@ -17,7 +17,8 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     
     user = authenticate_user(form_data.username, form_data.password, session)
     
-    token = create_token(user.user_id)  # type: ignore
+    assert user.user_id is not None
+    token = create_token(user.user_id)
     return Token(access_token=token, token_type="bearer")
     
 
