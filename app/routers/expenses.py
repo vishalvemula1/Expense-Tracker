@@ -2,7 +2,8 @@ from ..dependencies import *
 from fastapi import Query, APIRouter
 from sqlmodel import select
 from typing import Annotated
-from ..models import *
+from ..models import Expense, ExpenseCreate, ExpenseUpdate
+from datetime import date
 
 router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
 

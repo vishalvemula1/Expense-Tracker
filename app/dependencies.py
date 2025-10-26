@@ -4,6 +4,8 @@ from fastapi import Depends
 from .models import User, Expense
 from .database import SessionDep
 
+
+__all__ = ["SessionDep",  "VerifiedOwnerDep", "VerifiedExpenseDep"]
 # Re-exported from database for centralized dependency access
 SessionDep = SessionDep
 
