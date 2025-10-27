@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
+import pytest
+from app.auth import get_password_hash
 from app.main import app
 from app.models import User, Expense
-
+from sqlmodel import Session
 
 # ====================================================================
 # Testing for the read expense (get) endpoint in expenses.py
@@ -104,3 +106,38 @@ def test_add_expense_invalid_data(authenticated_client: TestClient, test_user: U
     
     assert response.status_code == 422
 
+# ====================================================================
+# Testing for the read all expenses (get) endpoint in expenses.py
+# ====================================================================
+
+
+
+def test_read_all_expenses_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
+    response = authenticated_client.get(
+        f"/users/{test_user.user_id}/expenses/"
+        )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 4
+    assert data[1]["name"] == "Laptop"
+    assert data[2]["name"] == "Wine"
+    assert data[3]["name"] == "Rent"
+
+def test_read_all_expenses_unauthenticated(client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
+    response = client.get(
+        f"/users/{test_user.user_id}/expenses/"
+        )
+    
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_read_all_expenses_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
+    response = authenticated_client.get(
+        f"/users/{3}/expenses/"
+        )
+    
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
