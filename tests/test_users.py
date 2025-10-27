@@ -219,3 +219,39 @@ def test_delete_user_unauthorized(authenticated_client: TestClient):
     assert response.status_code == 403
     data = response.json()
     assert data["detail"] == "Not authorized for this request"
+
+# ====================================================================
+# Testing for the login endpoint in users.py (post)
+# ====================================================================
+
+def test_login_happy_path(client: TestClient, test_user: User):
+    response = client.post("/users/login", data={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+def test_login_wrong_password(client: TestClient, test_user: User):
+    response = client.post("/users/login", data={
+        "username": "testuser",
+        "password": "wrongpassword"
+    })
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Invalid username or password"
+
+def test_login_user_not_found(client: TestClient):
+    response = client.post("/users/login", data={
+        "username": "nonexistentuser",
+        "password": "somepassword"
+    })
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Invalid username or password"
+
