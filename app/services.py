@@ -18,6 +18,6 @@ def get_user(user_id: int, session: Session) -> User:
 def get_expense(expense_id: int, user: User, session: Session) -> Expense:
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to perform this action")
+        raise HTTPException(status_code=403, detail="Not authorized for this request")
     return data
     
