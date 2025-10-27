@@ -1,10 +1,11 @@
 from fastapi.testclient import TestClient
 from app.main import app
 from sqlmodel import Session
+from app.models import User
 
-
+#Post
 # ====================================================================
-# Testing for the signup endpoint in users.py
+# Testing for the signup (post) endpoint in users.py
 # ====================================================================
 def test_signup_happy_path(client: TestClient, test_db: Session):
     response = client.post("/users/signup", json={
@@ -78,4 +79,40 @@ def test_signup_negative_salary(client: TestClient):
     })
     
     assert response.status_code == 422
+
+# ====================================================================
+# Testing for the read user (get) endpoint in users.py
+# ====================================================================
+
+def test_read_user_happy_path(authenticated_client: TestClient,  
+                              test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = authenticated_client.get(f"/users/{user_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["username"] == "testuser"
+
+def test_read_user_unauthenticated(client: TestClient,
+                                 test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = client.get(f"/users/{user_id}")
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_read_user_unauthorized(authenticated_client: TestClient):
+    response = authenticated_client.get("/users/3")
+
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
+
 
