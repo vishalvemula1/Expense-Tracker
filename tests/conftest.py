@@ -75,3 +75,34 @@ def test_expense(test_db: Session, test_user: User):
     test_db.refresh(expense)
 
     return expense
+
+@pytest.fixture
+def create_test_expenses_and_users(test_db: Session, test_user: User):
+    from datetime import date
+    assert test_user.user_id is not None
+    hashed_pw = get_password_hash("testpassword")
+    new_user = User(
+        username="newuser",
+        email="newuser@example.com",
+        salary=50000,
+        password_hash=hashed_pw
+    )
+    test_db.add(new_user)
+    test_db.commit()
+    test_db.refresh(new_user)
+
+    assert new_user.user_id is not None
+    assert test_user.user_id is not None
+    expenses = [
+        Expense(name="Books", amount=150, category="Education", description="Learning FastAPI", date_of_entry=date.today(), user_id=new_user.user_id),
+        Expense(name="Laptop", amount=1200, category="Electronics", description="Work laptop", date_of_entry=date.today(), user_id=test_user.user_id),
+    ]
+    expenses_2 = [
+        Expense(name="Cheese", amount=50, category="Food", description="Unforunate lack of judgement", date_of_entry=date.today(), user_id=new_user.user_id),
+        Expense(name="Wine", amount=100, category="Food", description="For the classy nights", date_of_entry=date.today(), user_id=test_user.user_id),
+        Expense(name="Rent", amount=1200, category="Housing", description="Monthly rent", date_of_entry=date.today(), user_id=test_user.user_id),
+    ]
+    expenses.extend(expenses_2)
+    test_db.add_all(expenses)
+    test_db.commit()
+    return expenses
