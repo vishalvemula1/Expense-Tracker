@@ -25,7 +25,7 @@ async def add_expense(verified_user: VerifiedOwnerDep,
     return expense_data
 
 @router.get("/")
-async def read_expenses(verified_user: VerifiedOwnerDep,
+async def read_all_expenses(verified_user: VerifiedOwnerDep,
                         session: SessionDep, 
                         limit: Annotated[int, Query(le=100)] = 5,
                         offset: int = 0) -> list[Expense]:
