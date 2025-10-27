@@ -116,3 +116,71 @@ def test_read_user_unauthorized(authenticated_client: TestClient):
     assert data["detail"] == "Not authorized for this request"
 
 
+# ====================================================================
+# Testing for the update_user (put) endpoint in users.py
+# ====================================================================
+
+def test_update_user_happy_path(authenticated_client: TestClient,
+                               test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = authenticated_client.put(f"/users/{user_id}", json={
+        "email": "updated@example.com",
+        "salary": 60000
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == "updated@example.com"
+    assert data["salary"] == 60000
+    assert "password" not in data
+
+def test_update_user_unauthenticated(client: TestClient,
+                                 test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = client.put(f"/users/{user_id}", json={
+        "email": "updated@example.com",
+        "salary": 60000
+    })
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_update_user_unauthorized(authenticated_client: TestClient):
+    response = authenticated_client.put("/users/3", json={
+        "email": "updated@example.com", 
+        "salary": 60000
+    })
+
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
+
+def test_update_user_duplicate_username(authenticated_client: TestClient,
+                                        test_db: Session,
+                                        test_user: User):
+    from app.auth import get_password_hash
+    # Create another user to cause a duplicate username conflict
+    hashed_pw = get_password_hash("testpassword")
+    another_user = User(
+        username="existinguser",
+        email="existing@example.com",
+        password_hash=hashed_pw,
+        salary=50000
+    )
+    test_db.add(another_user)
+    test_db.commit()
+
+    response = authenticated_client.put(f"/users/{test_user.user_id}", json={
+        "username": "existinguser"
+    })
+
+    assert response.status_code == 409
+    data = response.json()
+    assert data["detail"] == "Username or email already exists"
