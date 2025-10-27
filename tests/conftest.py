@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import create_engine, Session, SQLModel
 from app.auth import get_password_hash
-from app.models import User
+from app.models import User, Expense
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_session
@@ -58,3 +58,20 @@ def authenticated_client(client: TestClient, test_user: User):
     client.headers = {"Authorization": f"Bearer {token}"}
 
     return client
+
+@pytest.fixture
+def test_expense(test_db: Session, test_user: User):
+    from datetime import date
+    assert test_user.user_id is not None
+    expense = Expense(
+        name="Test Expense",
+        amount=100.0,
+        category="Test Category",
+        date_of_entry=date.today(),
+        user_id=test_user.user_id
+    )
+    test_db.add(expense)
+    test_db.commit()
+    test_db.refresh(expense)
+
+    return expense
