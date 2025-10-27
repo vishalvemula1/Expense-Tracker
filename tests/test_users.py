@@ -184,3 +184,38 @@ def test_update_user_duplicate_username(authenticated_client: TestClient,
     assert response.status_code == 409
     data = response.json()
     assert data["detail"] == "Username or email already exists"
+
+# ====================================================================
+# Testing for the delete_user (delete) endpoint in users.py
+# ====================================================================
+
+def test_delete_user_happy_path(authenticated_client: TestClient,
+                               test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = authenticated_client.delete(f"/users/{user_id}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data == "Deletion Successful"
+
+def test_delete_user_unauthenticated(client: TestClient,
+                                 test_user: User):
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    response = client.delete(f"/users/{user_id}")
+
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_delete_user_unauthorized(authenticated_client: TestClient):
+    response = authenticated_client.delete("/users/3")
+
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
