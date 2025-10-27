@@ -1,9 +1,8 @@
 from fastapi.testclient import TestClient
-from app.main import app
 from sqlmodel import Session
 from app.models import User
 
-#Post
+
 # ====================================================================
 # Testing for the signup (post) endpoint in users.py
 # ====================================================================
