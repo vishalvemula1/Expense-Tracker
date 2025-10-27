@@ -1,9 +1,5 @@
 from fastapi.testclient import TestClient
-import pytest
-from app.auth import get_password_hash
-from app.main import app
 from app.models import User, Expense
-from sqlmodel import Session
 
 # ====================================================================
 # Testing for the read expense (get) endpoint in expenses.py
@@ -141,3 +137,117 @@ def test_read_all_expenses_unauthorized(authenticated_client: TestClient, test_u
     assert response.status_code == 403
     data = response.json()
     assert data["detail"] == "Not authorized for this request"
+
+# ====================================================================
+# Testing for the delete expense (delete) endpoint in expenses.py
+# ====================================================================
+
+def test_delete_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.delete(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["expense_id"] == test_expense.expense_id
+
+def test_delete_expense_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
+    response = client.delete(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        )
+    
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_delete_expense_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.delete(
+        f"/users/{3}/expenses/{test_expense.expense_id}"
+        )
+    
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
+
+def test_delete_expense_nonexistent(authenticated_client: TestClient, test_user: User):
+    response = authenticated_client.delete(
+        f"/users/{test_user.user_id}/expenses/{999}"
+        )
+    
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Expense was not found"
+
+# ====================================================================
+# Testing for the update expense (put) endpoint in expenses.py
+# ====================================================================
+
+def test_update_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "name": "Updated Expense",
+            "amount": 200.0,
+            "category": "Updated Category",
+            "description": "Updated description"
+        }
+        )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated Expense"
+    assert data["amount"] == 200.0
+
+def test_update_expense_partial(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "name": "Partially Updated"
+        }
+        )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Partially Updated"
+    assert data["amount"] == test_expense.amount  # Original amount preserved
+
+def test_update_expense_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
+    response = client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "name": "Updated"
+        }
+        )
+    
+    assert response.status_code == 401
+    data = response.json()
+    assert data["detail"] == "Not authenticated"
+
+def test_update_expense_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.put(
+        f"/users/{3}/expenses/{test_expense.expense_id}", json={
+            "name": "Updated"
+        }
+        )
+    
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
+
+def test_update_expense_nonexistent(authenticated_client: TestClient, test_user: User):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{999}", json={
+            "name": "Updated"
+        }
+        )
+    
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Expense was not found"
+
+def test_update_expense_invalid_data(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "name": "",
+            "amount": -50
+        }
+        )
+    
+    assert response.status_code == 422
