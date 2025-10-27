@@ -78,10 +78,10 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
     return user
         
 
-def verify_user(user_id: int, current_user: Annotated[User, Depends(get_authenticated_user)]) -> User: 
-    if current_user.user_id != user_id:
-        raise HTTPException(status_code=401, detail="Not authorized for this request")
-    return current_user
+def verify_user(user_id: int, authenticated_user: Annotated[User, Depends(get_authenticated_user)]) -> User: 
+    if authenticated_user.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this request")
+    return authenticated_user
 
 
 def verify_expense(expense_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Expense: 
