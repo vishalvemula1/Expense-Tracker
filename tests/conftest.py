@@ -47,3 +47,14 @@ def test_user(test_db: Session):
 
     return test_user
 
+@pytest.fixture
+def authenticated_client(client: TestClient, test_user: User):
+    from app.auth import create_token
+
+    user_id = test_user.user_id
+    assert user_id is not None
+
+    token = create_token(user_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
+
+    return client
