@@ -2,6 +2,7 @@ from typing import TypeVar, Type
 from fastapi import HTTPException
 from sqlmodel import SQLModel, Session
 from .models import Expense, User
+from .models import Category
 
 ModelType = TypeVar('ModelType', bound=SQLModel)
 
@@ -21,3 +22,8 @@ def get_expense(expense_id: int, user: User, session: Session) -> Expense:
         raise HTTPException(status_code=403, detail="Not authorized for this request")
     return data
     
+def get_category(category_id: int, user: User, session: Session) -> Category:
+    data = get_object_or_404(model=Category, object_id=category_id, session=session)
+    if data.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized for this request")
+    return data

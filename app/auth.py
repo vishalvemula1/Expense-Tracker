@@ -9,8 +9,8 @@ from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
 from .database import SessionDep
-from .services import get_user, get_expense
-from .models import User, Expense
+from .services import get_user, get_expense, get_category
+from .models import User, Expense, Category
 from .config import settings
 
 SECRET_KEY = settings.SECRET_KEY
@@ -86,3 +86,6 @@ def verify_user(user_id: int, authenticated_user: Annotated[User, Depends(get_au
 
 def verify_expense(expense_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Expense: 
     return get_expense(expense_id=expense_id, user=user, session=session) 
+
+def verify_category(category_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Category:
+    return get_category(category_id=category_id, user=user, session=session)
