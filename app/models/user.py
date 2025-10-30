@@ -1,10 +1,10 @@
 from typing import Annotated, Optional
 from pydantic import EmailStr
-from .validators import create_non_empty_validator_mixin
+from .validators import create_string_validators
 from sqlmodel import Field, SQLModel
 
 PositiveAmount = Annotated[float, Field(ge=0, description="Amount must be greater than zero", default=0)]
-NoEmptyStringsMixinUser = create_non_empty_validator_mixin("username", "email", "password")
+NoEmptyStringsMixinUser = create_string_validators(username="strict", email="trimmed")
 
 # ==========================================
 # User Tables
