@@ -7,7 +7,8 @@ from .user import PositiveAmount
 
 DateCheck = Annotated[date, Field(default_factory=date.today)]
 """Date fields that defaults to today's date. Used for a class' entry and update to record time of entry"""
-# StripAllWhitespaceMixinExpense = create_non_empty_validator_mixin("name", strip_all_whitespace=True)
+
+
 NoEmptyStringMixinExpense = create_string_validators(name="trimmed", description="trimmed")
 # ==========================================
 # Expense Tables
@@ -30,7 +31,7 @@ class ExpenseUpdate(SQLModel, NoEmptyStringMixinExpense):
 
 class Expense(ExpenseBase, table=True):
     expense_id: int | None = Field(primary_key=True, default=None, description="Primary key")
-    category_id: int | None = Field(foreign_key="category.category_id", default=None)
+    category_id: int = Field(foreign_key="category.category_id")
     user_id: int = Field(foreign_key="user.user_id")
     date_of_entry: DateCheck
     date_of_update: Optional[DateCheck] = None

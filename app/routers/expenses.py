@@ -4,6 +4,7 @@ from sqlmodel import select
 from typing import Annotated
 from ..models import Expense, ExpenseCreate, ExpenseUpdate
 from datetime import date
+from ..services import get_category
 
 router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
 
@@ -16,7 +17,11 @@ async def add_expense(verified_user: VerifiedOwnerDep,
                       new_expense: ExpenseCreate, 
                       session: SessionDep) -> Expense:
     
-    expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id})
+    category_id = new_expense.category_id
+    category = get_category(category_id=category_id, user=verified_user, session=session)
+
+
+    expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id, "category_id": category.category_id})
 
     session.add(expense_data)
     session.commit()
@@ -48,11 +53,16 @@ async def delete_expense(expense: VerifiedExpenseDep,
     return expense
 
 @router.put("/{expense_id}")
-async def update_expense(expense: VerifiedExpenseDep, 
+async def update_expense(expense: VerifiedExpenseDep,
+                         user: VerifiedOwnerDep, 
                          update_request: ExpenseUpdate,  
                          session: SessionDep) -> Expense:
     
+    category_id = update_request.category_id
+    category = get_category(category_id=category_id, user=user, session=session)
+
     update_data = update_request.model_dump(exclude_unset=True)
+    update_data.update({"category_id": category.category_id})
 
     expense.sqlmodel_update(update_data)
     expense.date_of_update = date.today()
