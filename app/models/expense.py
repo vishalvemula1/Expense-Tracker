@@ -31,7 +31,7 @@ class ExpenseUpdate(SQLModel, NoEmptyStringMixinExpense):
 
 class Expense(ExpenseBase, table=True):
     expense_id: int | None = Field(primary_key=True, default=None, description="Primary key")
-    category_id: int = Field(foreign_key="category.category_id")
+    category_id: int = Field(foreign_key="category.category_id") # type: ignore
     user_id: int = Field(foreign_key="user.user_id")
     date_of_entry: DateCheck
     date_of_update: Optional[DateCheck] = None

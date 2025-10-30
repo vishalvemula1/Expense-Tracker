@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import create_engine, Session, SQLModel
 from app.auth import get_password_hash
-from app.models import User, Expense
+from app.models import User, Expense, Category
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_session
@@ -60,15 +60,50 @@ def authenticated_client(client: TestClient, test_user: User):
     return client
 
 @pytest.fixture
-def test_expense(test_db: Session, test_user: User):
+def test_category(test_db: Session, test_user: User):
+    from datetime import date
+    assert test_user.user_id
+    category = Category(name="Uncategorized",
+                        user_id=test_user.user_id,
+                        date_of_entry=date.today(),
+                        tag="Black", #type: ignore
+                        is_default=True)
+    
+    test_db.add(category)
+    test_db.commit()
+    test_db.refresh(category)
+
+    return category
+
+@pytest.fixture
+def test_new_category(test_db: Session, test_user: User):
+    from datetime import date
+    assert test_user.user_id
+    category = Category(name="First Category",
+                        user_id=test_user.user_id,
+                        date_of_entry=date.today(),
+                        tag="Blue" #type: ignore
+                    )
+    
+    test_db.add(category)
+    test_db.commit()
+    test_db.refresh(category)
+
+    return category   
+    
+
+@pytest.fixture
+def test_expense(test_db: Session, test_user: User, test_category: Category):
 
     from datetime import date
 
     assert test_user.user_id is not None
-
+    assert test_category is not None
+    assert test_category.category_id is not None
     expense = Expense(
         name="Test Expense",
         amount=100.0,
+        category_id=test_category.category_id,
         date_of_entry=date.today(),
         user_id=test_user.user_id
     )
@@ -80,11 +115,13 @@ def test_expense(test_db: Session, test_user: User):
     return expense
 
 @pytest.fixture
-def create_test_expenses_and_users(test_db: Session, test_user: User):
+def create_test_expenses_and_users(test_db: Session, test_user: User, test_category: Category):
 
     from datetime import date
 
     assert test_user.user_id is not None
+    assert test_category is not None
+    assert test_category.category_id is not None
 
     hashed_pw = get_password_hash("testpassword")
 
@@ -106,12 +143,14 @@ def create_test_expenses_and_users(test_db: Session, test_user: User):
         Expense(name="Books", 
                 amount=150, 
                 description="Learning FastAPI", 
+                category_id=test_category.category_id,
                 date_of_entry=date.today(), 
                 user_id=new_user.user_id),
 
         Expense(name="Laptop", 
                 amount=1200, 
                 description="Work laptop", 
+                category_id=test_category.category_id,
                 date_of_entry=date.today(), 
                 user_id=test_user.user_id),
     ]
@@ -120,18 +159,21 @@ def create_test_expenses_and_users(test_db: Session, test_user: User):
         Expense(name="Cheese", 
                 amount=50, 
                 description="Unforunate lack of judgement", 
+                category_id=test_category.category_id,
                 date_of_entry=date.today(), 
                 user_id=new_user.user_id),
 
         Expense(name="Wine", 
                 amount=100, 
                 description="For the classy nights", 
+                category_id=test_category.category_id,
                 date_of_entry=date.today(), 
                 user_id=test_user.user_id),
 
         Expense(name="Rent", 
                 amount=1200, 
                 description="Monthly rent", 
+                category_id=test_category.category_id,
                 date_of_entry=date.today(), 
                 user_id=test_user.user_id),
     ]
