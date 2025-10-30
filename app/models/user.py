@@ -4,7 +4,7 @@ from .validators import create_string_validators
 from sqlmodel import Field, SQLModel
 
 PositiveAmount = Annotated[float, Field(ge=0, description="Amount must be greater than zero", default=0)]
-NoEmptyStringsMixinUser = create_string_validators(username="strict", email="trimmed")
+NoEmptyStringsMixinUser = create_string_validators(username="strict", email="trimmed", password="trimmed")
 
 # ==========================================
 # User Tables
