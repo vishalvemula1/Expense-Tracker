@@ -2,6 +2,7 @@ from sqlmodel import SQLModel, Field
 from .validators import create_string_validators
 from enum import Enum
 from .expense import DateCheck
+from sqlalchemy import UniqueConstraint
 
 NoEmptyStringsMixinCategory = create_string_validators(name="trimmed", description="trimmed")
 
@@ -13,7 +14,7 @@ class Color(str, Enum):
 
 
 class CategoryBase(SQLModel):
-    name: str = Field(unique=True)
+    name: str
     description: str | None = None
     tag: Color | None = None
 
@@ -27,6 +28,7 @@ class CategoryUpdate(CategoryBase, NoEmptyStringsMixinCategory):
     tag: Color | None = None
 
 class Category(CategoryBase, table=True):
+    __table_args__ = (UniqueConstraint('name', 'user_id'),)
     user_id: int = Field(foreign_key="user.user_id")
     category_id: int | None = Field(primary_key=True, default=None)
     date_of_entry: DateCheck
