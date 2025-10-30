@@ -1,12 +1,15 @@
 from ..dependencies import *
 from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
+from ..models import Category
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
+from datetime import date
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -33,6 +36,18 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
+
+        # Creating a default category for every new user called "Uncategorized"
+        default_category = Category(name="Uncategorized",
+                                    user_id=new_user.user_id, # type: ignore
+                                    description="All your uncategorized expenses",
+                                    tag="Black", # type: ignore
+                                    date_of_entry=date.today(),
+                                    is_default=True)
+        
+        session.add(default_category)
+        session.commit()
+        session.refresh(default_category)
 
         return new_user
     
