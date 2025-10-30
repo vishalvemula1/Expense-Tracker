@@ -1,5 +1,5 @@
 from fastapi import Query, APIRouter, HTTPException
-from ..models import Category, CategoryCreate, CategoryUpdate
+from ..models import Category, CategoryCreate, CategoryUpdate, Expense
 from ..dependencies import VerifiedCategoryDep, SessionDep, VerifiedOwnerDep
 from sqlmodel import select
 from typing import Annotated
@@ -75,6 +75,16 @@ async def read_all_categories(user: VerifiedOwnerDep,
     .limit(limit)
     .offset(offset))
 
+    data = session.exec(statement).all()
+
+    return list(data)
+
+@router.get("/{category_id}/expenses")
+async def read_all_expenses_from_category(category: VerifiedCategoryDep,
+                                          session: SessionDep) -> list[Expense]:
+    category_id = category.category_id
+    statement = (select(Expense).where(Expense.category_id == category_id))
+    
     data = session.exec(statement).all()
 
     return list(data)
