@@ -55,7 +55,7 @@ def test_signup_empty_username(client: TestClient):
     
     assert response.status_code == 422 
     data = response.json()   
-    assert "Cannot be empty or whitespace only" in data["detail"][0]["msg"]
+    assert "username cannot be empty or whitespace only" in data["detail"][0]["msg"]
     
 def test_signup_empty_password(client: TestClient):
     response = client.post("/users/signup", json={
@@ -67,7 +67,7 @@ def test_signup_empty_password(client: TestClient):
     
     assert response.status_code == 422
     data = response.json()   
-    assert "Cannot be empty or whitespace only" in data["detail"][0]["msg"]
+    assert "password cannot be empty or whitespace only" in data["detail"][0]["msg"]
 
 def test_signup_negative_salary(client: TestClient):
     response = client.post("/users/signup", json={
