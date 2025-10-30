@@ -23,7 +23,6 @@ venv/
 # Project-Specific Archives & Data
 # ==========================================
 _archive/
-sql_m/
 database.db
 
 # Documentation & Guides
