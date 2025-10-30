@@ -254,3 +254,35 @@ def test_login_user_not_found(client: TestClient):
     data = response.json()
     assert data["detail"] == "Invalid username or password"
 
+# ====================================================================
+# Testing for default category creation on signup
+# ====================================================================
+
+def test_signup_creates_default_category(client: TestClient, test_db: Session):
+    from sqlmodel import select
+    from app.models import Category
+
+    response = client.post("/users/signup", json={
+        "username": "newuser",
+        "email": "new@example.com",
+        "salary": 60000,
+        "password": "securepass123"
+    })
+
+    assert response.status_code == 200
+    user_data = response.json()
+    user_id = user_data["user_id"]
+
+    # Check that default category was created
+    statement = select(Category).where(
+        Category.user_id == user_id,
+        Category.is_default == True
+    )
+    default_category = test_db.exec(statement).first()
+
+    assert default_category is not None
+    assert default_category.name == "Uncategorized"
+    assert default_category.description == "All your uncategorized expenses"
+    assert default_category.is_default == True
+    assert default_category.tag == "Black"
+

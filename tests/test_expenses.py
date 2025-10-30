@@ -47,60 +47,140 @@ def test_read_expense_unauthenticated(test_expense: Expense, test_user: User, cl
 # Testing for the add expense (post) endpoint in expenses.py
 # ====================================================================
 
-def test_add_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense):
+def test_add_expense_happy_path(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
         f"/users/{test_user.user_id}/expenses/", json={
             "name": "Cheese",
             "amount": 50,
-            "category": "Food",
             "description": "Unforunate lack of judgement"
         }
         )
-    
+
     assert response.status_code == 200
     data = response.json()
-    assert data["expense_id"] == 2
-    assert data["user_id"] == 1
+    assert data["name"] == "Cheese"
+    assert data["amount"] == 50
+    assert data["user_id"] == test_user.user_id
+    assert data["category_id"] == test_category.category_id  # Should use default category
 
-def test_add_expense_not_authenticated(client: TestClient, test_user: User, test_expense: Expense):
+def test_add_expense_not_authenticated(client: TestClient, test_user: User, test_category):
     response = client.post(
         f"/users/{test_user.user_id}/expenses/", json={
             "name": "Cheese",
             "amount": 50,
-            "category": "Food",
             "description": "Unforunate lack of judgement"
         }
         )
-    
+
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_add_expense_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+def test_add_expense_unauthorized(authenticated_client: TestClient, test_category):
     response = authenticated_client.post(
         f"/users/{3}/expenses/", json={
             "name": "Cheese",
             "amount": 50,
-            "category": "Food",
             "description": "Unforunate lack of judgement"
         }
         )
-    
+
     assert response.status_code == 403
     data = response.json()
     assert data["detail"] == "Not authorized for this request"
 
-def test_add_expense_invalid_data(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+def test_add_expense_invalid_data(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
         f"/users/{test_user.user_id}/expenses/", json={
             "name": "",
             "amount": -50,
-            "category": "Food",
             "description": "Unforunate lack of judgement"
         }
         )
-    
+
     assert response.status_code == 422
+
+def test_add_expense_with_category_id(authenticated_client: TestClient, test_user: User, test_new_category):
+    response = authenticated_client.post(
+        f"/users/{test_user.user_id}/expenses/", json={
+            "name": "Laptop",
+            "amount": 1200,
+            "category_id": test_new_category.category_id,
+            "description": "Work laptop"
+        }
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Laptop"
+    assert data["category_id"] == test_new_category.category_id
+
+def test_add_expense_without_category_id(authenticated_client: TestClient, test_user: User, test_category):
+    response = authenticated_client.post(
+        f"/users/{test_user.user_id}/expenses/", json={
+            "name": "Coffee",
+            "amount": 5.50
+        }
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Coffee"
+    assert data["category_id"] == test_category.category_id  # Should use default
+
+def test_add_expense_with_invalid_category_id(authenticated_client: TestClient, test_user: User, test_category):
+    response = authenticated_client.post(
+        f"/users/{test_user.user_id}/expenses/", json={
+            "name": "Invalid",
+            "amount": 100,
+            "category_id": 9999
+        }
+        )
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Category was not found"
+
+def test_add_expense_with_other_users_category(authenticated_client: TestClient, test_user: User, test_db):
+    from app.auth import get_password_hash
+    from app.models import Category
+    from datetime import date
+
+    # Create another user with their own category
+    hashed_pw = get_password_hash("password")
+    other_user = User(
+        username="otheruser",
+        email="other@example.com",
+        password_hash=hashed_pw,
+        salary=50000
+    )
+    test_db.add(other_user)
+    test_db.commit()
+    test_db.refresh(other_user)
+
+    assert other_user.user_id is not None
+
+    other_category = Category(
+        name="OtherCategory",
+        user_id=other_user.user_id,
+        date_of_entry=date.today()
+    )
+    test_db.add(other_category)
+    test_db.commit()
+    test_db.refresh(other_category)
+
+    # Try to use other user's category
+    response = authenticated_client.post(
+        f"/users/{test_user.user_id}/expenses/", json={
+            "name": "Unauthorized",
+            "amount": 100,
+            "category_id": other_category.category_id
+        }
+        )
+
+    assert response.status_code == 403
+    data = response.json()
+    assert data["detail"] == "Not authorized for this request"
 
 # ====================================================================
 # Testing for the read all expenses (get) endpoint in expenses.py
@@ -182,20 +262,21 @@ def test_delete_expense_nonexistent(authenticated_client: TestClient, test_user:
 # Testing for the update expense (put) endpoint in expenses.py
 # ====================================================================
 
-def test_update_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+def test_update_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_new_category):
     response = authenticated_client.put(
         f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
             "name": "Updated Expense",
             "amount": 200.0,
-            "category": "Updated Category",
+            "category_id": test_new_category.category_id,
             "description": "Updated description"
         }
         )
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Expense"
     assert data["amount"] == 200.0
+    assert data["category_id"] == test_new_category.category_id
 
 def test_update_expense_partial(authenticated_client: TestClient, test_user: User, test_expense: Expense):
     response = authenticated_client.put(
@@ -249,5 +330,41 @@ def test_update_expense_invalid_data(authenticated_client: TestClient, test_user
             "amount": -50
         }
         )
-    
+
     assert response.status_code == 422
+
+def test_update_expense_change_category(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_new_category):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "category_id": test_new_category.category_id
+        }
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["category_id"] == test_new_category.category_id
+    assert data["name"] == test_expense.name  # Other fields unchanged
+
+def test_update_expense_to_default_category(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_category):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "name": "Updated Name"
+        }
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated Name"
+    # Category should remain the same if not specified
+    assert data["category_id"] == test_expense.category_id
+
+def test_update_expense_with_invalid_category(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.put(
+        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+            "category_id": 9999
+        }
+        )
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data["detail"] == "Category was not found"
