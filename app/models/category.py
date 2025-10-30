@@ -28,8 +28,9 @@ class CategoryUpdate(CategoryBase, NoEmptyStringsMixinCategory):
     tag: Color | None = None
 
 class Category(CategoryBase, table=True):
-    __table_args__ = (UniqueConstraint('name', 'user_id'),)
+    __table_args__ = (UniqueConstraint('name', 'user_id', name='uq_category_name_user'),)
     user_id: int = Field(foreign_key="user.user_id")
     category_id: int | None = Field(primary_key=True, default=None)
     date_of_entry: DateCheck
+    is_default: bool = False
 

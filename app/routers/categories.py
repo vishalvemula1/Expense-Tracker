@@ -34,6 +34,10 @@ async def read_category(category: VerifiedCategoryDep) -> Category:
 async def update_category(category: VerifiedCategoryDep,
                           update_request: CategoryUpdate,
                           session: SessionDep) -> Category:
+    
+    if category.is_default:
+        raise HTTPException(status_code=409, detail="Not allowed to edit default category")
+    
     try:
         update_data = update_request.model_dump(exclude_unset=True)
 
