@@ -1,9 +1,9 @@
 from sqlmodel import SQLModel, Field
-from .validators import create_non_empty_validator_mixin
+from .validators import create_string_validators
 from enum import Enum
 from .expense import DateCheck
 
-NoEmptyStringsMixinCategory = create_non_empty_validator_mixin("name", "description")
+NoEmptyStringsMixinCategory = create_string_validators(name="trimmed", description="trimmed")
 
 class Color(str, Enum):
     Blue = "Blue"
