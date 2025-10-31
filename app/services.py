@@ -22,7 +22,7 @@ def get_expense(expense_id: int, user: User, session: Session) -> Expense:
         raise HTTPException(status_code=403, detail="Not authorized for this request")
     return data
     
-def get_category(category_id: int | None, user: User, session: Session) -> Category:
+def get_category_or_default(category_id: int | None, user: User, session: Session) -> Category:
     if not category_id:
         category = session.exec(select(Category).where(Category.user_id == user.user_id, Category.is_default == True)).first()
         assert category is not None
