@@ -29,3 +29,4 @@ database.db
 GIT_FILE_OPERATIONS_GUIDE.md
 .claude/
 SECURITY_AUDIT.md
+count_loc.py

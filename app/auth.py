@@ -9,7 +9,7 @@ from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
 from .database import SessionDep
-from .services import get_user, get_expense, get_category
+from .services import get_user
 from .models import User, Expense, Category
 from .config import settings
 
@@ -78,14 +78,3 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
     return user
         
 
-def verify_user(user_id: int, authenticated_user: Annotated[User, Depends(get_authenticated_user)]) -> User: 
-    if authenticated_user.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this request")
-    return authenticated_user
-
-
-def verify_expense(expense_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Expense: 
-    return get_expense(expense_id=expense_id, user=user, session=session) 
-
-def verify_category(category_id: int, user: Annotated[User, Depends(verify_user)], session: SessionDep) -> Category:
-    return get_category(category_id=category_id, user=user, session=session)
