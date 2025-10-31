@@ -2,6 +2,7 @@ from ..dependencies import *
 from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
 from ..models import Category
+from ..config import default_categories as defaults
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Annotated
@@ -38,12 +39,12 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
         session.refresh(new_user)
 
         # Creating a default category for every new user called "Uncategorized"
-        default_category = Category(name="Uncategorized",
-                                    user_id=new_user.user_id, # type: ignore
-                                    description="All your uncategorized expenses",
-                                    tag="Black", # type: ignore
-                                    date_of_entry=date.today(),
-                                    is_default=True)
+        default_category = Category(name = defaults.DEFAULT_CATEGORY_NAME,
+                                    user_id = new_user.user_id, # type: ignore
+                                    description = defaults.DEFAULT_CATEGORY_DESCRIPTION,
+                                    tag = defaults.DEFAULT_CATEGORY_TAG, # type: ignore
+                                    date_of_entry = date.today(),
+                                    is_default = True)
         
         session.add(default_category)
         session.commit()
