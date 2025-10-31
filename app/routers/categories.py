@@ -57,6 +57,8 @@ async def update_category(category: VerifiedCategoryDep,
 @router.delete("/{category_id}")
 async def delete_category(category: VerifiedCategoryDep, 
                           session: SessionDep) -> str:
+    if category.is_default:
+        raise HTTPException(status_code=409, detail="Not allowed to delete default category")
     
     session.delete(category)
     session.commit()

@@ -24,7 +24,7 @@ def get_expense(expense_id: int, user: User, session: Session) -> Expense:
     
 def get_category(category_id: int | None, user: User, session: Session) -> Category:
     if not category_id:
-        category = session.exec(select(Category).where(Category.is_default == True)).first()
+        category = session.exec(select(Category).where(Category.user_id == user.user_id, Category.is_default == True)).first()
         assert category is not None
         return category
     
