@@ -1,101 +1,122 @@
 # Expense Tracker API
 
-This is a FastAPI-based API for a personal expense tracker. It allows users to manage their expenses through a secure and authenticated RESTful interface.
+A RESTful API for personal expense tracking built with FastAPI. This was my first complete backend project, where I learned to design and implement a production-ready API with authentication, authorization, and a comprehensive test suite.
 
-## Key Features
+## Features
 
-*   **User Authentication:** Secure user authentication using JWT (JSON Web Tokens). Passwords are not stored in the database, only their hashes.
-*   **Expense Management:** Full CRUD (Create, Read, Update, Delete) functionality for expenses.
-*   **Data Validation:** Robust data validation using Pydantic to ensure data integrity.
-*   **Authorization:** Users can only access and modify their own expenses.
-*   **Comprehensive Test Suite:** The application is thoroughly tested using Pytest, with a focus on unit and integration testing.
+- **JWT Authentication** - Token-based auth with secure password hashing (never storing plaintext passwords)
+- **Category Management** - Organize expenses with custom categories, automatically creating an "Uncategorized" default for each user
+- **Full CRUD Operations** - Complete expense lifecycle management with proper validation
+- **Per-User Data Isolation** - Users can only access their own data, enforced at the database and API level
+- **95+ Tests** - Comprehensive test coverage including edge cases, authentication, and authorization scenarios
 
 ## Tech Stack
 
-*   **Backend:** Python, FastAPI
-*   **Database:** SQLModel, SQLite
-*   **Authentication:** JWT, pwdlib
-*   **Testing:** Pytest, Pytest-Asyncio
-*   **Data Validation:** Pydantic
+- **FastAPI** - Modern, fast web framework with automatic API documentation
+- **SQLModel** - Type-safe ORM combining SQLAlchemy and Pydantic
+- **SQLite** - Lightweight database for development
+- **JWT** - Secure token-based authentication
+- **Pytest** - Testing framework with async support
 
-## Getting Started
-
-### Prerequisites
-
-*   Python 3.9+
-*   Poetry (or pip)
-
-### Installation and Setup
-
-1.  **Clone the repository:**
-
-    ```bash
-    git clone https://github.com/your-username/expense-tracker.git
-    cd expense-tracker
-    ```
-
-2.  **Create a virtual environment and install dependencies:**
-
-    ```bash
-    python -m venv .venv
-    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
-    pip install -r app/requirements.txt
-    ```
-
-3.  **Set up environment variables:**
-
-    Create a `.env` file in the root directory and add the following variables:
-
-    ```
-    SECRET_KEY=your_secret_key
-    ALGORITHM=HS256
-    ACCESS_TOKEN_EXPIRE_MINUTES=30
-    ```
-
-4.  **Run the application:**
-
-    ```bash
-    uvicorn app.main:app --reload
-    ```
-
-    The API will be available at `http://127.0.0.1:8000`.
-
-### Running the Tests
-
-To run the tests, execute the following command in the root directory:
+## Quick Start
 
 ```bash
+# Clone and setup
+git clone https://github.com/vishalvemula1/expense-tracker.git
+cd expense-tracker
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r app/requirements.txt
+
+# Configure environment (create .env file)
+SECRET_KEY=your_secret_key_here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Run the API
+uvicorn app.main:app --reload
+
+# Run tests
 pytest
 ```
 
-## API Endpoints
+The API will be available at `http://127.0.0.1:8000` with interactive docs at `/docs`.
 
-The API provides the following endpoints:
+## API Overview
 
-### Users
+### Authentication
+- `POST /users/signup` - Create account
+- `POST /users/login` - Get JWT token
 
-*   `POST /users/signup`: Create a new user.
-*   `POST /users/login`: Log in and receive a JWT token.
-*   `GET /users/{user_id}`: Get user details.
-*   `PUT /users/{user_id}`: Update user details.
-*   `DELETE /users/{user_id}`: Delete a user.
+### User Management
+- `GET /users/{user_id}` - Get user profile
+- `PUT /users/{user_id}` - Update user details
+- `DELETE /users/{user_id}` - Delete account
+
+### Categories
+- `POST /users/{user_id}/categories/` - Create category
+- `GET /users/{user_id}/categories/` - List all categories
+- `GET /users/{user_id}/categories/{category_id}` - Get specific category
+- `PUT /users/{user_id}/categories/{category_id}` - Update category
+- `DELETE /users/{user_id}/categories/{category_id}` - Delete category
+- `GET /users/{user_id}/categories/{category_id}/expenses` - Get expenses by category
 
 ### Expenses
+- `POST /users/{user_id}/expenses/` - Create expense
+- `GET /users/{user_id}/expenses/` - List all expenses (with optional category filter)
+- `GET /users/{user_id}/expenses/{expense_id}` - Get specific expense
+- `PUT /users/{user_id}/expenses/{expense_id}` - Update expense
+- `DELETE /users/{user_id}/expenses/{expense_id}` - Delete expense
 
-*   `POST /users/{user_id}/expenses/`: Add a new expense.
-*   `GET /users/{user_id}/expenses/`: Get all expenses for a user.
-*   `GET /users/{user_id}/expenses/{expense_id}`: Get a specific expense.
-*   `PUT /users/{user_id}/expenses/{expense_id}`: Update an expense.
-*   `DELETE /users/{user_id}/expenses/{expense_id}`: Delete an expense.
+## What I Learned
 
-## Challenges & Key Learnings
+Building this project from scratch taught me more than any tutorial could. Here are the biggest challenges I faced:
 
-This project was a great learning experience. Here are some of the key challenges I faced and what I learned from them:
+### 1. Designing the Category System
+The hardest part wasn't writing the code—it was figuring out *what* to write. I knew I wanted expenses to have categories, but then I realized: what if a user creates an expense before making any categories? Should it fail? Should category be optional?
 
-1.  **Separation of Concerns:** I initially struggled with where to place the password hashing logic. I tried to implement it within the SQLModel class, but I soon realized that it was business logic, not data validation. I ended up moving the hashing logic to the API endpoints, which resulted in a cleaner and more maintainable codebase.
+I decided every expense *needs* a category, so I implemented an auto-generated "Uncategorized" default for each user. But then came another problem: how do I prevent users from editing or deleting this special category? I ended up adding an `is_default` flag and protection logic in the update/delete endpoints.
 
-2.  **Dependency Management:** I encountered a circular import issue between my `dependencies.py` and `auth.py` files. This forced me to refactor my code and rethink my dependency injection strategy. I ended up creating a `services.py` file to house my business logic, which resolved the circular import and made my code more modular.
+This taught me that API design is as much about anticipating user behavior as it is about writing clean code.
 
-3.  **Advanced Python Concepts:** I had the opportunity to learn and apply some more advanced Python concepts, such as `TypeVar` for creating generic functions and using factory functions to create reusable Pydantic validators. These concepts helped me to write more concise and reusable code.
+### 2. Database Constraints and Multi-User Design
+Initially, I made category names globally unique—meaning if one user created a "Food" category, nobody else could. Rookie mistake. I learned about composite unique constraints (`UniqueConstraint('name', 'user_id')`) to make names unique *per user* instead.
 
-4.  **Authentication and Authorization:** I gained a deep understanding of how authentication and authorization work in a web application. I learned how to implement JWT-based authentication, how to securely store passwords, and how to restrict access to certain endpoints based on user permissions.
+This pattern repeated throughout the project: thinking through edge cases like "what if two users try to do the same thing?" shaped how I designed the entire database schema.
+
+### 3. Where Does Logic Go?
+Early on, I tried putting password hashing inside the SQLModel class. It seemed logical, since it would enforce hashing upon creation so I wouldn't have to worry about missing anything within endpoints, it felt like something that could just be abstracted away from the main logic for "cleaner code" but I was wrong. I learned the hard way that **models define data structure**, while **business logic belongs in endpoints or service layers** and trying to hash it in the model was definitely not clean and felt out of place.
+
+When I hit circular import issues between `dependencies.py` and `auth.py`, I had to refactor everything. I created a separate `services.py` file to centralize business logic, which made the codebase way more maintainable. This taught me that good architecture isn't about clever tricks—it's about clear separation of concerns.
+
+### 4. Learning to Use (and Critique) AI-Generated Code
+I used AI to help generate many of the tests in this project, but that came with a hard lesson: **AI optimizes for passing tests, not secure code**. The AI generated 95+ tests that all passed perfectly, but it missed critical security tests like "can User A update an expense with User B's category?". 
+
+When I caught this, I realized the tests were written to match the implementation instead of verifying requirements. I had to go back and add proper cross-user security tests, which actually exposed bugs in my code. This taught me that AI is a powerful tool for boilerplate, but you need to think critically about *what* you're testing and *why*. Failed tests that expose security issues are more valuable than passing tests that give false confidence.
+
+I saw some of this coming which is why pretty much all of the code written for the main app files which actually runs the program were mostly handwritten since it was a learning experience but also because AI is really bad at making code secure, I'd rather use AI for boilerplate and areas that are repetitive than stuff I need to get right which is why I avoid it for the main program which is all of the app files and relegated it to testing, this gives the benefit of productivity without falling into the trap of a productivity illusion (if you use AI to generate the program's main files and security features)where you ship code faster but with technical debt which makes the amount of time saved in writing the code trivial compared to the amount of time that would need to be spent fixing the bad code which is usually not scalable, maintainable and doesn't follow DRY principles well, getting it right from the start is always better.
+
+### 5. Python Isn't Just Syntax
+I went in knowing Python basics but came out understanding `TypeVar` for generic functions, Pydantic validators with factory patterns, and FastAPI's dependency injection system. Reading the FastAPI and SQLModel docs deeply (not just skimming) made a huge difference. I learned that understanding *why* a framework makes certain design choices helps you use it properly.
+
+---
+
+## Project Structure
+```
+expense_tracker/
+├── app/
+│   ├── models/          # SQLModel schemas (User, Expense, Category)
+│   ├── routers/         # API endpoints by resource
+│   ├── auth.py          # JWT authentication logic
+│   ├── services.py      # Business logic layer
+│   ├── dependencies.py  # FastAPI dependency injection
+│   └── main.py          # App entry point
+├── tests/               # 95+ tests covering all endpoints
+└── database.db          # SQLite database
+```
+
+## Future Improvements
+- Add expense filtering by date range and amount
+- Switch to PostgreSQL for production
+- Containerize the project with Docker
+- Deploy it on a cloud service like AWS 
