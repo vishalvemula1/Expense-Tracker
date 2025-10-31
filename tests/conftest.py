@@ -1,16 +1,20 @@
 import pytest
 from sqlmodel import create_engine, Session, SQLModel
-from app.auth import get_password_hash
+from app.auth import get_password_hash, create_token
 from app.models import User, Expense, Category
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_session
 from sqlmodel.pool import StaticPool
+from datetime import date
+from typing import NamedTuple
+
+# ====================================================================
+# Basic Fixtures
+# ====================================================================
 
 @pytest.fixture
 def test_db():
-    print("Creating database")
-
     engine = create_engine("sqlite:///:memory:",
                            connect_args={"check_same_thread": False},
                            poolclass=StaticPool)
@@ -27,12 +31,12 @@ def client(test_db: Session):
     yield TestClient(app)
     app.dependency_overrides.clear()
 
+# ====================================================================
+# Single User Fixtures
+# ====================================================================
 
-@pytest.fixture    
+@pytest.fixture
 def test_user(test_db: Session):
-
-    print("Creating user in database")
-
     hashed_pw = get_password_hash("testpassword")
     test_user = User(
         username="testuser",
@@ -49,8 +53,6 @@ def test_user(test_db: Session):
 
 @pytest.fixture
 def authenticated_client(client: TestClient, test_user: User):
-    from app.auth import create_token
-
     user_id = test_user.user_id
     assert user_id is not None
 
@@ -61,14 +63,15 @@ def authenticated_client(client: TestClient, test_user: User):
 
 @pytest.fixture
 def test_category(test_db: Session, test_user: User):
-    from datetime import date
     assert test_user.user_id
-    category = Category(name="Uncategorized",
-                        user_id=test_user.user_id,
-                        date_of_entry=date.today(),
-                        tag="Black", #type: ignore
-                        is_default=True)
-    
+    category = Category(
+        name="Uncategorized",
+        user_id=test_user.user_id,
+        date_of_entry=date.today(),
+        tag="Black", #type: ignore
+        is_default=True
+    )
+
     test_db.add(category)
     test_db.commit()
     test_db.refresh(category)
@@ -77,29 +80,26 @@ def test_category(test_db: Session, test_user: User):
 
 @pytest.fixture
 def test_new_category(test_db: Session, test_user: User):
-    from datetime import date
     assert test_user.user_id
-    category = Category(name="First Category",
-                        user_id=test_user.user_id,
-                        date_of_entry=date.today(),
-                        tag="Blue" #type: ignore
-                    )
-    
+    category = Category(
+        name="First Category",
+        user_id=test_user.user_id,
+        date_of_entry=date.today(),
+        tag="Blue" #type: ignore
+    )
+
     test_db.add(category)
     test_db.commit()
     test_db.refresh(category)
 
-    return category   
-    
+    return category
+
 
 @pytest.fixture
 def test_expense(test_db: Session, test_user: User, test_category: Category):
-
-    from datetime import date
-
     assert test_user.user_id is not None
-    assert test_category is not None
     assert test_category.category_id is not None
+
     expense = Expense(
         name="Test Expense",
         amount=100.0,
@@ -107,79 +107,164 @@ def test_expense(test_db: Session, test_user: User, test_category: Category):
         date_of_entry=date.today(),
         user_id=test_user.user_id
     )
-    
+
     test_db.add(expense)
     test_db.commit()
     test_db.refresh(expense)
 
     return expense
 
+# ====================================================================
+# Multi-User Test Data Fixtures
+# ====================================================================
+
+class MultiUserData(NamedTuple):
+    """Container for multi-user test data"""
+    user1: User
+    user2: User
+    user1_default_category: Category
+    user2_default_category: Category
+    user1_food_category: Category
+    user2_travel_category: Category
+    user1_expenses: list[Expense]
+    user2_expenses: list[Expense]
+
 @pytest.fixture
-def create_test_expenses_and_users(test_db: Session, test_user: User, test_category: Category):
-
-    from datetime import date
-
-    assert test_user.user_id is not None
-    assert test_category is not None
-    assert test_category.category_id is not None
-
+def multi_user_data(test_db: Session) -> MultiUserData:
+    """Creates 2 users with categories and expenses for security testing"""
     hashed_pw = get_password_hash("testpassword")
 
-    new_user = User(
-        username="newuser",
-        email="newuser@example.com",
-        salary=50000,
+    # Create User 1
+    user1 = User(
+        username="user1",
+        email="user1@example.com",
+        salary=60000,
         password_hash=hashed_pw
     )
-
-    test_db.add(new_user)
+    test_db.add(user1)
     test_db.commit()
-    test_db.refresh(new_user)
+    test_db.refresh(user1)
+    assert user1.user_id is not None
 
-    assert new_user.user_id is not None
-    assert test_user.user_id is not None
+    # Create User 2
+    user2 = User(
+        username="user2",
+        email="user2@example.com",
+        salary=70000,
+        password_hash=hashed_pw
+    )
+    test_db.add(user2)
+    test_db.commit()
+    test_db.refresh(user2)
+    assert user2.user_id is not None
 
-    expenses = [
-        Expense(name="Books", 
-                amount=150, 
-                description="Learning FastAPI", 
-                category_id=test_category.category_id,
-                date_of_entry=date.today(), 
-                user_id=new_user.user_id),
+    # Create categories for User 1
+    user1_default_cat = Category(
+        name="Uncategorized",
+        user_id=user1.user_id,
+        is_default=True,
+        tag="Black", #type: ignore
+        date_of_entry=date.today()
+    )
+    user1_food_cat = Category(
+        name="Food",
+        user_id=user1.user_id,
+        tag="Blue", #type: ignore
+        date_of_entry=date.today()
+    )
 
-        Expense(name="Laptop", 
-                amount=1200, 
-                description="Work laptop", 
-                category_id=test_category.category_id,
-                date_of_entry=date.today(), 
-                user_id=test_user.user_id),
+    # Create categories for User 2
+    user2_default_cat = Category(
+        name="Uncategorized",
+        user_id=user2.user_id,
+        is_default=True,
+        tag="Black", #type: ignore
+        date_of_entry=date.today()
+    )
+    user2_travel_cat = Category(
+        name="Travel",
+        user_id=user2.user_id,
+        tag="Red", #type: ignore
+        date_of_entry=date.today()
+    )
+
+    test_db.add_all([user1_default_cat, user1_food_cat, user2_default_cat, user2_travel_cat])
+    test_db.commit()
+    test_db.refresh(user1_default_cat)
+    test_db.refresh(user1_food_cat)
+    test_db.refresh(user2_default_cat)
+    test_db.refresh(user2_travel_cat)
+
+    assert user1_default_cat.category_id is not None
+    assert user1_food_cat.category_id is not None
+    assert user2_default_cat.category_id is not None
+    assert user2_travel_cat.category_id is not None
+
+    # Create expenses for User 1
+    user1_expenses = [
+        Expense(
+            name="Groceries",
+            amount=50.0,
+            category_id=user1_food_cat.category_id,
+            user_id=user1.user_id,
+            date_of_entry=date.today()
+        ),
+        Expense(
+            name="Coffee",
+            amount=5.0,
+            category_id=user1_default_cat.category_id,
+            user_id=user1.user_id,
+            date_of_entry=date.today()
+        ),
     ]
 
-    expenses_2 = [
-        Expense(name="Cheese", 
-                amount=50, 
-                description="Unforunate lack of judgement", 
-                category_id=test_category.category_id,
-                date_of_entry=date.today(), 
-                user_id=new_user.user_id),
-
-        Expense(name="Wine", 
-                amount=100, 
-                description="For the classy nights", 
-                category_id=test_category.category_id,
-                date_of_entry=date.today(), 
-                user_id=test_user.user_id),
-
-        Expense(name="Rent", 
-                amount=1200, 
-                description="Monthly rent", 
-                category_id=test_category.category_id,
-                date_of_entry=date.today(), 
-                user_id=test_user.user_id),
+    # Create expenses for User 2
+    user2_expenses = [
+        Expense(
+            name="Flight",
+            amount=300.0,
+            category_id=user2_travel_cat.category_id,
+            user_id=user2.user_id,
+            date_of_entry=date.today()
+        ),
+        Expense(
+            name="Misc",
+            amount=20.0,
+            category_id=user2_default_cat.category_id,
+            user_id=user2.user_id,
+            date_of_entry=date.today()
+        ),
     ]
 
-
-    expenses.extend(expenses_2)
-    test_db.add_all(expenses)
+    test_db.add_all(user1_expenses + user2_expenses)
     test_db.commit()
-    return expenses
+    for expense in user1_expenses + user2_expenses:
+        test_db.refresh(expense)
+        assert expense.expense_id is not None
+
+    return MultiUserData(
+        user1=user1,
+        user2=user2,
+        user1_default_category=user1_default_cat,
+        user2_default_category=user2_default_cat,
+        user1_food_category=user1_food_cat,
+        user2_travel_category=user2_travel_cat,
+        user1_expenses=user1_expenses,
+        user2_expenses=user2_expenses
+    )
+
+@pytest.fixture
+def user1_client(client: TestClient, multi_user_data: MultiUserData):
+    """Authenticated client for user1"""
+    assert multi_user_data.user1.user_id
+    token = create_token(multi_user_data.user1.user_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
+    return client
+
+@pytest.fixture
+def user2_client(client: TestClient, multi_user_data: MultiUserData):
+    """Authenticated client for user2"""
+    assert multi_user_data.user2.user_id
+    token = create_token(multi_user_data.user2.user_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
+    return client

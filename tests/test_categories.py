@@ -47,35 +47,10 @@ def test_create_category_duplicate_name_same_user(authenticated_client: TestClie
     data = response.json()
     assert data["detail"] == "Category with the same name already exists"
 
-def test_create_category_duplicate_name_different_user(authenticated_client: TestClient, test_user: User, test_db: Session):
-    from app.auth import get_password_hash, create_token
-    from datetime import date
-
-    # Create another user with their own "Food" category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password_hash=hashed_pw,
-        salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
-
-    assert other_user.user_id is not None
-
-    other_category = Category(
-        name="Food",
-        user_id=other_user.user_id,
-        date_of_entry=date.today()
-    )
-    test_db.add(other_category)
-    test_db.commit()
-
-    # test_user should still be able to create their own "Food" category
-    response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+def test_create_category_duplicate_name_different_user(user2_client: TestClient, multi_user_data):
+    # user1 already has "Food" category, user2 should be able to create their own "Food"
+    response = user2_client.post(
+        f"/users/{multi_user_data.user2.user_id}/categories/", json={
             "name": "Food",
             "description": "My food category"
         }
@@ -84,7 +59,7 @@ def test_create_category_duplicate_name_different_user(authenticated_client: Tes
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Food"
-    assert data["user_id"] == test_user.user_id
+    assert data["user_id"] == multi_user_data.user2.user_id
 
 def test_create_category_unauthenticated(client: TestClient, test_user: User):
     response = client.post(
@@ -160,36 +135,10 @@ def test_read_category_unauthenticated(client: TestClient, test_user: User, test
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_read_category_unauthorized(authenticated_client: TestClient, test_user: User, test_db: Session):
-    from app.auth import get_password_hash
-    from datetime import date
-
-    # Create another user with their own category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password_hash=hashed_pw,
-        salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
-
-    assert other_user.user_id is not None
-
-    other_category = Category(
-        name="OtherCategory",
-        user_id=other_user.user_id,
-        date_of_entry=date.today()
-    )
-    test_db.add(other_category)
-    test_db.commit()
-    test_db.refresh(other_category)
-
-    # Try to access other user's category
-    response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{other_category.category_id}"
+def test_read_category_unauthorized(user1_client: TestClient, multi_user_data):
+    # user1 tries to access user2's category
+    response = user1_client.get(
+        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}"
     )
 
     assert response.status_code == 403
@@ -353,36 +302,10 @@ def test_update_category_unauthenticated(client: TestClient, test_user: User, te
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_update_category_unauthorized(authenticated_client: TestClient, test_user: User, test_db: Session):
-    from app.auth import get_password_hash
-    from datetime import date
-
-    # Create another user with their own category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password_hash=hashed_pw,
-        salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
-
-    assert other_user.user_id is not None
-
-    other_category = Category(
-        name="OtherCategory",
-        user_id=other_user.user_id,
-        date_of_entry=date.today()
-    )
-    test_db.add(other_category)
-    test_db.commit()
-    test_db.refresh(other_category)
-
-    # Try to update other user's category
-    response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{other_category.category_id}", json={
+def test_update_category_unauthorized(user1_client: TestClient, multi_user_data):
+    # user1 tries to update user2's category
+    response = user1_client.put(
+        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}", json={
             "name": "Hacked"
         }
     )
@@ -439,36 +362,10 @@ def test_delete_category_unauthenticated(client: TestClient, test_user: User, te
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_delete_category_unauthorized(authenticated_client: TestClient, test_user: User, test_db: Session):
-    from app.auth import get_password_hash
-    from datetime import date
-
-    # Create another user with their own category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password_hash=hashed_pw,
-        salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
-
-    assert other_user.user_id is not None
-
-    other_category = Category(
-        name="OtherCategory",
-        user_id=other_user.user_id,
-        date_of_entry=date.today()
-    )
-    test_db.add(other_category)
-    test_db.commit()
-    test_db.refresh(other_category)
-
-    # Try to delete other user's category
-    response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/categories/{other_category.category_id}"
+def test_delete_category_unauthorized(user1_client: TestClient, multi_user_data):
+    # user1 tries to delete user2's category
+    response = user1_client.delete(
+        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}"
     )
 
     assert response.status_code == 403
@@ -483,6 +380,15 @@ def test_delete_category_nonexistent(authenticated_client: TestClient, test_user
     assert response.status_code == 404
     data = response.json()
     assert data["detail"] == "Category was not found"
+
+def test_delete_default_category_should_fail(authenticated_client: TestClient, test_user: User, test_category: Category):
+    response = authenticated_client.delete(
+        f"/users/{test_user.user_id}/categories/{test_category.category_id}"
+    )
+
+    assert response.status_code in [403, 409]
+    data = response.json()
+    assert "default" in data["detail"].lower()
 
 # ====================================================================
 # Testing for the get expenses by category endpoint in categories.py
@@ -556,36 +462,10 @@ def test_get_expenses_by_category_unauthenticated(client: TestClient, test_user:
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_get_expenses_by_category_unauthorized(authenticated_client: TestClient, test_user: User, test_db: Session):
-    from app.auth import get_password_hash
-    from datetime import date
-
-    # Create another user with their own category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
-        username="otheruser",
-        email="other@example.com",
-        password_hash=hashed_pw,
-        salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
-
-    assert other_user.user_id is not None
-
-    other_category = Category(
-        name="OtherCategory",
-        user_id=other_user.user_id,
-        date_of_entry=date.today()
-    )
-    test_db.add(other_category)
-    test_db.commit()
-    test_db.refresh(other_category)
-
-    # Try to access other user's category expenses
-    response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{other_category.category_id}/expenses"
+def test_get_expenses_by_category_unauthorized(user1_client: TestClient, multi_user_data):
+    # user1 tries to access user2's category expenses
+    response = user1_client.get(
+        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}/expenses"
     )
 
     assert response.status_code == 403

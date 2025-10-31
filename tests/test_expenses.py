@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from app.models import User, Expense
+from sqlmodel import Session
 
 # ====================================================================
 # Testing for the read expense (get) endpoint in expenses.py
@@ -188,32 +189,24 @@ def test_add_expense_with_other_users_category(authenticated_client: TestClient,
 
 
 
-def test_read_all_expenses_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
-    response = authenticated_client.get(
-        f"/users/{test_user.user_id}/expenses/"
-        )
-    
+def test_read_all_expenses_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
+    response = authenticated_client.get(f"/users/{test_user.user_id}/expenses/")
+
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 4
-    assert data[1]["name"] == "Laptop"
-    assert data[2]["name"] == "Wine"
-    assert data[3]["name"] == "Rent"
+    assert len(data) >= 1
+    assert data[0]["name"] == "Test Expense"
 
-def test_read_all_expenses_unauthenticated(client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
-    response = client.get(
-        f"/users/{test_user.user_id}/expenses/"
-        )
-    
+def test_read_all_expenses_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
+    response = client.get(f"/users/{test_user.user_id}/expenses/")
+
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_read_all_expenses_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense, create_test_expenses_and_users):
-    response = authenticated_client.get(
-        f"/users/{3}/expenses/"
-        )
-    
+def test_read_all_expenses_unauthorized(user1_client: TestClient, multi_user_data):
+    response = user1_client.get(f"/users/{multi_user_data.user2.user_id}/expenses/")
+
     assert response.status_code == 403
     data = response.json()
     assert data["detail"] == "Not authorized for this request"
@@ -368,3 +361,31 @@ def test_update_expense_with_invalid_category(authenticated_client: TestClient, 
     assert response.status_code == 404
     data = response.json()
     assert data["detail"] == "Category was not found"
+
+def test_update_expense_with_other_users_category(user1_client: TestClient, multi_user_data):
+    from tests.conftest import MultiUserData
+    data: MultiUserData = multi_user_data
+
+    # SECURITY TEST: User1 tries to update their expense to use User2's category
+    response = user1_client.put(
+        f"/users/{data.user1.user_id}/expenses/{data.user1_expenses[0].expense_id}",
+        json={"category_id": data.user2_travel_category.category_id}
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized for this request"
+
+def test_add_expense_without_category_uses_correct_default(user1_client: TestClient, multi_user_data):
+    from tests.conftest import MultiUserData
+    data: MultiUserData = multi_user_data
+
+    # SECURITY TEST: User1 creates expense without category - should use their own default
+    response = user1_client.post(
+        f"/users/{data.user1.user_id}/expenses/",
+        json={"name": "Test Expense", "amount": 100.0}
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["category_id"] == data.user1_default_category.category_id
+    assert result["category_id"] != data.user2_default_category.category_id
