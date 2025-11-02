@@ -10,7 +10,7 @@ from pwdlib import PasswordHash
 
 from .database import SessionDep
 from .services import get_user
-from .models import User, Expense, Category
+from .models import User
 from .config import settings
 
 SECRET_KEY = settings.SECRET_KEY
