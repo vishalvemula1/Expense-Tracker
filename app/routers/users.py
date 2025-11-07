@@ -34,8 +34,7 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
         new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
 
         session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
+        session.flush()
 
         # Creating a default category for every new user called "Uncategorized"
         default_category = Category(name = defaults.DEFAULT_CATEGORY_NAME,
@@ -47,7 +46,7 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
         
         session.add(default_category)
         session.commit()
-        session.refresh(default_category)
+        session.refresh(new_user)
 
         return new_user
     
