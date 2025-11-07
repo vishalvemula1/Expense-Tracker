@@ -20,7 +20,7 @@ class UserCreate(UserBase, NoEmptyStringsMixinUser):
     password: str
 
 class UserRead(UserBase):
-    user_id: int | None 
+    user_id: int 
 
 class User(UserBase, table=True):
     user_id: int | None = Field(primary_key=True, default=None, description="Primary key")
