@@ -8,7 +8,7 @@ class AppExceptions:
     
     InvalidUsernamePassword = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
-    Unauthorized = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized for this request")
+    Unauthorized = HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this request")
 
     DefaultCategoryUneditable = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Not allowed to edit or delete default category") 
 
@@ -35,7 +35,7 @@ def handle_integrity_error(e: IntegrityError, context: str = ""):
     if "user.email" in error_info:
         raise IntegrityExceptions.EmailExists
     
-    if "uq_category_name_user" in error_info:
+    if "uq_category_name_user" in error_info or "category.name, category.user_id" in error_info:
         raise IntegrityExceptions.CategoryNameExists
     
     if "foreign key constraint" in error_info:
