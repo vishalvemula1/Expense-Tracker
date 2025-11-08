@@ -21,7 +21,7 @@ def test_signup_happy_path(client: TestClient, test_db: Session):
     assert data["salary"] == 60000
     assert "password" not in data
 
-def test_signup_duplicate_name(client: TestClient, test_db: Session, test_user):    
+def test_signup_duplicate_name(client: TestClient, test_db: Session, test_user):
     response  = client.post("/users/signup", json={
         "username": "testuser",
         "email": "new@example.com",
@@ -31,9 +31,9 @@ def test_signup_duplicate_name(client: TestClient, test_db: Session, test_user):
 
     assert response.status_code == 409
     data = response.json()
-    assert data['detail'] == "Username or email already exists"
+    assert data['detail'] == "Username already exists"
 
-def test_signup_duplicate_email(client: TestClient, test_db: Session, test_user):    
+def test_signup_duplicate_email(client: TestClient, test_db: Session, test_user):
     response  = client.post("/users/signup", json={
         "username": "newuser",
         "email": "test@example.com",
@@ -43,7 +43,7 @@ def test_signup_duplicate_email(client: TestClient, test_db: Session, test_user)
 
     assert response.status_code == 409
     data = response.json()
-    assert data['detail'] == "Username or email already exists"
+    assert data['detail'] == "Email already exists"
 
 def test_signup_empty_username(client: TestClient):
     response = client.post("/users/signup", json={
@@ -182,7 +182,7 @@ def test_update_user_duplicate_username(authenticated_client: TestClient,
 
     assert response.status_code == 409
     data = response.json()
-    assert data["detail"] == "Username or email already exists"
+    assert data["detail"] == "Username already exists"
 
 # ====================================================================
 # Testing for the delete_user (delete) endpoint in users.py
@@ -197,8 +197,7 @@ def test_delete_user_happy_path(authenticated_client: TestClient,
     response = authenticated_client.delete(f"/users/{user_id}")
 
     assert response.status_code == 200
-    data = response.json()
-    assert data == "Deletion Successful"
+    assert response.json() is None
 
 def test_delete_user_unauthenticated(client: TestClient,
                                  test_user: User):

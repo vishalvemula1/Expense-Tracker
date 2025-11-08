@@ -277,7 +277,7 @@ def test_update_category_cannot_edit_default(authenticated_client: TestClient, t
 
     assert response.status_code == 409
     data = response.json()
-    assert data["detail"] == "Not allowed to edit default category"
+    assert data["detail"] == "Not allowed to edit or delete default category"
 
 def test_update_category_duplicate_name(authenticated_client: TestClient, test_user: User, test_category: Category, test_new_category: Category):
     # Try to rename test_new_category to "Uncategorized" (which already exists)
