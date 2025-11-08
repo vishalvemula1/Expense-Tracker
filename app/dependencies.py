@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException
 from .models import User, Expense, Category
 from .database import SessionDep
 from .services import get_expense, get_category_or_default
+from .exceptions import AppExceptions
 
 __all__ = ["SessionDep",  "VerifiedOwnerDep", "VerifiedExpenseDep", "VerifiedCategoryDep"]
 # Re-exported from database for centralized dependency access
@@ -13,7 +14,7 @@ SessionDep = SessionDep
 
 def verify_user(user_id: int, authenticated_user: Annotated[User, Depends(get_authenticated_user)]) -> User: 
     if authenticated_user.user_id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this request")
+        raise AppExceptions.Unauthorized
     return authenticated_user
 
 VerifiedOwnerDep = Annotated[User, Depends(verify_user)]

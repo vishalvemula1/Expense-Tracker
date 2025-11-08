@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from sqlmodel import SQLModel, Session, select
 from .models import Expense, User
 from .models import Category
+from .exceptions import AppExceptions
 
 ModelType = TypeVar('ModelType', bound=SQLModel)
 
@@ -19,7 +20,7 @@ def get_user(user_id: int, session: Session) -> User:
 def get_expense(expense_id: int, user: User, session: Session) -> Expense:
     data = get_object_or_404(model=Expense, object_id=expense_id, session=session)
     if data.user_id != user.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this request")
+        raise AppExceptions.Unauthorized
     return data
     
 def get_category_or_default(category_id: int | None, user: User, session: Session) -> Category:
@@ -31,5 +32,5 @@ def get_category_or_default(category_id: int | None, user: User, session: Sessio
     
     data = get_object_or_404(model=Category, object_id=category_id, session=session)
     if data.user_id != user.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized for this request")
+        raise AppExceptions.Unauthorized
     return data

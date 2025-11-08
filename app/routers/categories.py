@@ -1,6 +1,8 @@
 from fastapi import Query, APIRouter, HTTPException
 from ..models import Category, CategoryCreate, CategoryUpdate, Expense
 from ..dependencies import VerifiedCategoryDep, SessionDep, VerifiedOwnerDep
+from ..exceptions import AppExceptions, handle_integrity_error
+
 from sqlmodel import select
 from typing import Annotated
 from sqlalchemy.exc import IntegrityError
@@ -22,7 +24,8 @@ async def create_category(new_category: CategoryCreate,
 
     except IntegrityError as e:
         session.rollback()
-        raise HTTPException(status_code=409, detail="Category with the same name already exists")
+        handle_integrity_error(e, context="Category Creation")
+        raise  # This line is unreachable, but helps type checkers
 
 
 @router.get("/{category_id}")
@@ -36,7 +39,7 @@ async def update_category(category: VerifiedCategoryDep,
                           session: SessionDep) -> Category:
     
     if category.is_default:
-        raise HTTPException(status_code=409, detail="Not allowed to edit default category")
+        raise AppExceptions.DefaultCategoryUneditable
     
     try:
         update_data = update_request.model_dump(exclude_unset=True)
@@ -51,14 +54,14 @@ async def update_category(category: VerifiedCategoryDep,
 
     except IntegrityError as e:
         session.rollback()
-        raise HTTPException(status_code=409, detail="Category with the same name already exists")
-
+        handle_integrity_error(e, context="Updating Category")
+        raise  # This line is unreachable, but helps type checkers
 
 @router.delete("/{category_id}")
 async def delete_category(category: VerifiedCategoryDep, 
                           session: SessionDep) -> str:
     if category.is_default:
-        raise HTTPException(status_code=409, detail="Not allowed to delete default category")
+        raise AppExceptions.DefaultCategoryUneditable
     
     session.delete(category)
     session.commit()

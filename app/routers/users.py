@@ -3,6 +3,7 @@ from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
 from ..models import Category
 from ..config import default_categories as defaults
+from ..exceptions import handle_integrity_error
 
 from fastapi import APIRouter, Query, Depends, HTTPException
 from typing import Annotated
@@ -27,7 +28,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     
 
 @router.post("/signup", response_model=UserRead)
-async def create_user(user: UserCreate, session: SessionDep) -> User:
+async def create_user(user: UserCreate, session: SessionDep) -> User: #type: ignore
     try: 
         hashed_password = get_password_hash(user.password)
         user_data_dict = user.model_dump(exclude={"password"})
@@ -50,12 +51,9 @@ async def create_user(user: UserCreate, session: SessionDep) -> User:
 
         return new_user
     
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Username or email already exists"
-        )
+        handle_integrity_error(e, context="User Signup")
 
 
 @router.get("/{user_id}", response_model=UserRead)
@@ -75,7 +73,7 @@ async def read_users(session: SessionDep,
 @router.put("/{user_id}", response_model=UserRead)
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
-                      session: SessionDep) -> User:
+                      session: SessionDep) -> User: #type: ignore
     try:
         update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
         if update_request.password:
@@ -89,17 +87,14 @@ async def update_user(verified_user: VerifiedOwnerDep,
         session.refresh(verified_user)
         return verified_user
 
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Username or email already exists"
-        )
+        handle_integrity_error(e, context="User Updation")
 
 
 @router.delete("/{user_id}")
-async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep) -> str:
+async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
     session.delete(verified_user)
     session.commit()
 
-    return "Deletion Successful"
+    return

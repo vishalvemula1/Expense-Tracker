@@ -8,6 +8,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 
+from .exceptions import AppExceptions
 from .database import SessionDep
 from .services import get_user
 from .models import User
@@ -22,9 +23,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
 pass_hash = PasswordHash.recommended()
 
-credentials_exception = HTTPException(status_code=401, 
-                                      detail="Could not validate credentials",
-                                      headers={"WWW-Authenticate": "Bearer"})
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pass_hash.verify(plain_password, hashed_password)
@@ -38,10 +36,10 @@ def authenticate_user(username: str, password: str, session: SessionDep) -> User
     user = session.exec(statement).first()
 
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise AppExceptions.InvalidUsernamePassword
     
     if not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise AppExceptions.InvalidUsernamePassword
     
     return user
 
@@ -69,10 +67,10 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
         payload: dict[str, Any] = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
-            raise credentials_exception
+            raise AppExceptions.CredentialsException
         
     except InvalidTokenError:
-        raise credentials_exception
+        raise AppExceptions.CredentialsException
     
     user = get_user(user_id, session=session)
     return user
