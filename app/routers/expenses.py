@@ -6,7 +6,7 @@ from ..models import Expense, ExpenseCreate, ExpenseUpdate
 from datetime import date
 from ..services import get_category_or_default
 
-router = APIRouter(prefix="/users/{user_id}/expenses", tags=["expenses"])
+router = APIRouter(prefix="/me/expenses", tags=["expenses"])
 
 @router.get("/{expense_id}")
 async def read_an_expense(expense: VerifiedExpenseDep) -> Expense:

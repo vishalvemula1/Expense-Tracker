@@ -13,11 +13,9 @@ from sqlalchemy.exc import IntegrityError
 from datetime import date
 
 
-router = APIRouter(prefix="/users", tags=["users"])
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-
-
-@router.post("/login")
+@auth_router.post("/login")
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
                 session: SessionDep) -> Token:
     
@@ -27,7 +25,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     return Token(access_token=token, token_type="bearer")
     
 
-@router.post("/signup", response_model=UserRead)
+@auth_router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep) -> User: #type: ignore
     try: 
         hashed_password = get_password_hash(user.password)
@@ -56,7 +54,9 @@ async def create_user(user: UserCreate, session: SessionDep) -> User: #type: ign
         handle_integrity_error(e, context="User Signup")
 
 
-@router.get("/{user_id}", response_model=UserRead)
+router = APIRouter(tags=["users"])
+
+@router.get("/me", response_model=UserRead)
 async def read_user(verified_user: VerifiedOwnerDep) -> User:
     return verified_user
 
@@ -70,7 +70,7 @@ async def read_users(session: SessionDep,
     return list(users)
 
 
-@router.put("/{user_id}", response_model=UserRead)
+@router.put("/me", response_model=UserRead)
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
                       session: SessionDep) -> User: #type: ignore
@@ -92,7 +92,7 @@ async def update_user(verified_user: VerifiedOwnerDep,
         handle_integrity_error(e, context="User Updation")
 
 
-@router.delete("/{user_id}")
+@router.delete("/me")
 async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
     session.delete(verified_user)
     session.commit()

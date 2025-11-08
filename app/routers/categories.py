@@ -7,7 +7,7 @@ from sqlmodel import select
 from typing import Annotated
 from sqlalchemy.exc import IntegrityError
 
-router = APIRouter(prefix="/users/{user_id}/categories", tags=["categories"])
+router = APIRouter(prefix="/me/categories", tags=["categories"])
 
 @router.post("/")
 async def create_category(new_category: CategoryCreate, 

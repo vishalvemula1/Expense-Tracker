@@ -7,7 +7,7 @@ from app.models import User
 # Testing for the signup (post) endpoint in users.py
 # ====================================================================
 def test_signup_happy_path(client: TestClient, test_db: Session):
-    response = client.post("/users/signup", json={
+    response = client.post("/auth/signup", json={
         "username": "newuser",
         "email": "new@example.com",
         "salary": 60000,
@@ -22,7 +22,7 @@ def test_signup_happy_path(client: TestClient, test_db: Session):
     assert "password" not in data
 
 def test_signup_duplicate_name(client: TestClient, test_db: Session, test_user):
-    response  = client.post("/users/signup", json={
+    response  = client.post("/auth/signup", json={
         "username": "testuser",
         "email": "new@example.com",
         "salary": 5000,
@@ -34,7 +34,7 @@ def test_signup_duplicate_name(client: TestClient, test_db: Session, test_user):
     assert data['detail'] == "Username already exists"
 
 def test_signup_duplicate_email(client: TestClient, test_db: Session, test_user):
-    response  = client.post("/users/signup", json={
+    response  = client.post("/auth/signup", json={
         "username": "newuser",
         "email": "test@example.com",
         "salary": 5000,
@@ -46,7 +46,7 @@ def test_signup_duplicate_email(client: TestClient, test_db: Session, test_user)
     assert data['detail'] == "Email already exists"
 
 def test_signup_empty_username(client: TestClient):
-    response = client.post("/users/signup", json={
+    response = client.post("/auth/signup", json={
         "username": "",
         "email": "new@example.com",
         "salary": 50000,
@@ -58,7 +58,7 @@ def test_signup_empty_username(client: TestClient):
     assert "username cannot be empty or whitespace only" in data["detail"][0]["msg"]
     
 def test_signup_empty_password(client: TestClient):
-    response = client.post("/users/signup", json={
+    response = client.post("/auth/signup", json={
         "username": "newuser",
         "email": "new@example.com",
         "salary": 50000,
@@ -70,7 +70,7 @@ def test_signup_empty_password(client: TestClient):
     assert "password cannot be empty or whitespace only" in data["detail"][0]["msg"]
 
 def test_signup_negative_salary(client: TestClient):
-    response = client.post("/users/signup", json={
+    response = client.post("/auth/signup", json={
         "username": "newuser",
         "email": "new@example.com",
         "salary": -5000,
@@ -86,10 +86,7 @@ def test_signup_negative_salary(client: TestClient):
 def test_read_user_happy_path(authenticated_client: TestClient,  
                               test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = authenticated_client.get(f"/users/{user_id}")
+    response = authenticated_client.get("/me")
 
     assert response.status_code == 200
     data = response.json()
@@ -98,21 +95,11 @@ def test_read_user_happy_path(authenticated_client: TestClient,
 def test_read_user_unauthenticated(client: TestClient,
                                  test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = client.get(f"/users/{user_id}")
+    response = client.get("/me")
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_read_user_unauthorized(authenticated_client: TestClient):
-    response = authenticated_client.get("/users/3")
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 
 # ====================================================================
@@ -122,10 +109,7 @@ def test_read_user_unauthorized(authenticated_client: TestClient):
 def test_update_user_happy_path(authenticated_client: TestClient,
                                test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = authenticated_client.put(f"/users/{user_id}", json={
+    response = authenticated_client.put("/me", json={
         "email": "updated@example.com",
         "salary": 60000
     })
@@ -139,10 +123,7 @@ def test_update_user_happy_path(authenticated_client: TestClient,
 def test_update_user_unauthenticated(client: TestClient,
                                  test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = client.put(f"/users/{user_id}", json={
+    response = client.put("/me", json={
         "email": "updated@example.com",
         "salary": 60000
     })
@@ -150,16 +131,6 @@ def test_update_user_unauthenticated(client: TestClient,
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_update_user_unauthorized(authenticated_client: TestClient):
-    response = authenticated_client.put("/users/3", json={
-        "email": "updated@example.com", 
-        "salary": 60000
-    })
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 def test_update_user_duplicate_username(authenticated_client: TestClient,
                                         test_db: Session,
@@ -176,7 +147,7 @@ def test_update_user_duplicate_username(authenticated_client: TestClient,
     test_db.add(another_user)
     test_db.commit()
 
-    response = authenticated_client.put(f"/users/{test_user.user_id}", json={
+    response = authenticated_client.put("/me", json={
         "username": "existinguser"
     })
 
@@ -191,10 +162,7 @@ def test_update_user_duplicate_username(authenticated_client: TestClient,
 def test_delete_user_happy_path(authenticated_client: TestClient,
                                test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = authenticated_client.delete(f"/users/{user_id}")
+    response = authenticated_client.delete("/me")
 
     assert response.status_code == 200
     assert response.json() is None
@@ -202,28 +170,18 @@ def test_delete_user_happy_path(authenticated_client: TestClient,
 def test_delete_user_unauthenticated(client: TestClient,
                                  test_user: User):
 
-    user_id = test_user.user_id
-    assert user_id is not None
-
-    response = client.delete(f"/users/{user_id}")
+    response = client.delete("/me")
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_delete_user_unauthorized(authenticated_client: TestClient):
-    response = authenticated_client.delete("/users/3")
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 # ====================================================================
 # Testing for the login endpoint in users.py (post)
 # ====================================================================
 
 def test_login_happy_path(client: TestClient, test_user: User):
-    response = client.post("/users/login", data={
+    response = client.post("/auth/login", data={
         "username": "testuser",
         "password": "testpassword"
     })
@@ -234,7 +192,7 @@ def test_login_happy_path(client: TestClient, test_user: User):
     assert data["token_type"] == "bearer"
 
 def test_login_wrong_password(client: TestClient, test_user: User):
-    response = client.post("/users/login", data={
+    response = client.post("/auth/login", data={
         "username": "testuser",
         "password": "wrongpassword"
     })
@@ -244,7 +202,7 @@ def test_login_wrong_password(client: TestClient, test_user: User):
     assert data["detail"] == "Invalid username or password"
 
 def test_login_user_not_found(client: TestClient):
-    response = client.post("/users/login", data={
+    response = client.post("/auth/login", data={
         "username": "nonexistentuser",
         "password": "somepassword"
     })
@@ -261,7 +219,7 @@ def test_signup_creates_default_category(client: TestClient, test_db: Session):
     from sqlmodel import select
     from app.models import Category
 
-    response = client.post("/users/signup", json={
+    response = client.post("/auth/signup", json={
         "username": "newuser",
         "email": "new@example.com",
         "salary": 60000,

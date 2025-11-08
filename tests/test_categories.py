@@ -8,7 +8,7 @@ from app.models import User, Category, Expense
 
 def test_create_category_happy_path(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "Food",
             "description": "Food and groceries",
             "tag": "Blue"
@@ -25,7 +25,7 @@ def test_create_category_happy_path(authenticated_client: TestClient, test_user:
 
 def test_create_category_minimal_fields(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "Travel"
         }
     )
@@ -38,7 +38,7 @@ def test_create_category_minimal_fields(authenticated_client: TestClient, test_u
 
 def test_create_category_duplicate_name_same_user(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "Uncategorized"
         }
     )
@@ -50,7 +50,7 @@ def test_create_category_duplicate_name_same_user(authenticated_client: TestClie
 def test_create_category_duplicate_name_different_user(user2_client: TestClient, multi_user_data):
     # user1 already has "Food" category, user2 should be able to create their own "Food"
     response = user2_client.post(
-        f"/users/{multi_user_data.user2.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "Food",
             "description": "My food category"
         }
@@ -63,7 +63,7 @@ def test_create_category_duplicate_name_different_user(user2_client: TestClient,
 
 def test_create_category_unauthenticated(client: TestClient, test_user: User):
     response = client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "Food"
         }
     )
@@ -72,20 +72,9 @@ def test_create_category_unauthenticated(client: TestClient, test_user: User):
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_create_category_unauthorized(authenticated_client: TestClient):
-    response = authenticated_client.post(
-        "/users/999/categories/", json={
-            "name": "Food"
-        }
-    )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_create_category_empty_name(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": ""
         }
     )
@@ -96,7 +85,7 @@ def test_create_category_empty_name(authenticated_client: TestClient, test_user:
 
 def test_create_category_whitespace_name(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/categories/", json={
+        "/me/categories/", json={
             "name": "   "
         }
     )
@@ -109,7 +98,7 @@ def test_create_category_whitespace_name(authenticated_client: TestClient, test_
 
 def test_read_category_happy_path(authenticated_client: TestClient, test_user: User, test_category: Category):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}"
+        f"/me/categories/{test_category.category_id}"
     )
 
     assert response.status_code == 200
@@ -119,7 +108,7 @@ def test_read_category_happy_path(authenticated_client: TestClient, test_user: U
 
 def test_read_category_nonexistent(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/9999"
+        "/me/categories/9999"
     )
 
     assert response.status_code == 404
@@ -128,22 +117,12 @@ def test_read_category_nonexistent(authenticated_client: TestClient, test_user: 
 
 def test_read_category_unauthenticated(client: TestClient, test_user: User, test_category: Category):
     response = client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}"
+        f"/me/categories/{test_category.category_id}"
     )
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_read_category_unauthorized(user1_client: TestClient, multi_user_data):
-    # user1 tries to access user2's category
-    response = user1_client.get(
-        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}"
-    )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 # ====================================================================
 # Testing for the read all categories (get) endpoint in categories.py
@@ -151,7 +130,7 @@ def test_read_category_unauthorized(user1_client: TestClient, multi_user_data):
 
 def test_read_all_categories_happy_path(authenticated_client: TestClient, test_user: User, test_category: Category):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/"
+        "/me/categories/"
     )
 
     assert response.status_code == 200
@@ -161,7 +140,7 @@ def test_read_all_categories_happy_path(authenticated_client: TestClient, test_u
 
 def test_read_all_categories_includes_default(authenticated_client: TestClient, test_user: User, test_category: Category):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/"
+        "/me/categories/"
     )
 
     assert response.status_code == 200
@@ -174,7 +153,7 @@ def test_read_all_categories_includes_default(authenticated_client: TestClient, 
 
 def test_read_all_categories_multiple(authenticated_client: TestClient, test_user: User, test_category: Category, test_new_category: Category):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/"
+        "/me/categories/"
     )
 
     assert response.status_code == 200
@@ -186,21 +165,12 @@ def test_read_all_categories_multiple(authenticated_client: TestClient, test_use
 
 def test_read_all_categories_unauthenticated(client: TestClient, test_user: User):
     response = client.get(
-        f"/users/{test_user.user_id}/categories/"
+        "/me/categories/"
     )
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_read_all_categories_unauthorized(authenticated_client: TestClient):
-    response = authenticated_client.get(
-        "/users/999/categories/"
-    )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 def test_read_all_categories_pagination(authenticated_client: TestClient, test_user: User, test_category: Category, test_db: Session):
     from datetime import date
@@ -218,7 +188,7 @@ def test_read_all_categories_pagination(authenticated_client: TestClient, test_u
 
     # Test with limit
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/?limit=5"
+        "/me/categories/?limit=5"
     )
 
     assert response.status_code == 200
@@ -227,7 +197,7 @@ def test_read_all_categories_pagination(authenticated_client: TestClient, test_u
 
     # Test with offset
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/?limit=5&offset=5"
+        "/me/categories/?limit=5&offset=5"
     )
 
     assert response.status_code == 200
@@ -240,7 +210,7 @@ def test_read_all_categories_pagination(authenticated_client: TestClient, test_u
 
 def test_update_category_happy_path(authenticated_client: TestClient, test_user: User, test_new_category: Category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}", json={
+        f"/me/categories/{test_new_category.category_id}", json={
             "name": "Updated Category",
             "description": "Updated description",
             "tag": "Red"
@@ -257,7 +227,7 @@ def test_update_category_partial(authenticated_client: TestClient, test_user: Us
     original_name = test_new_category.name
 
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}", json={
+        f"/me/categories/{test_new_category.category_id}", json={
             "description": "Only updating description"
         }
     )
@@ -270,7 +240,7 @@ def test_update_category_partial(authenticated_client: TestClient, test_user: Us
 
 def test_update_category_cannot_edit_default(authenticated_client: TestClient, test_user: User, test_category: Category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}", json={
+        f"/me/categories/{test_category.category_id}", json={
             "name": "Trying to change default"
         }
     )
@@ -282,7 +252,7 @@ def test_update_category_cannot_edit_default(authenticated_client: TestClient, t
 def test_update_category_duplicate_name(authenticated_client: TestClient, test_user: User, test_category: Category, test_new_category: Category):
     # Try to rename test_new_category to "Uncategorized" (which already exists)
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}", json={
+        f"/me/categories/{test_new_category.category_id}", json={
             "name": "Uncategorized"
         }
     )
@@ -293,7 +263,7 @@ def test_update_category_duplicate_name(authenticated_client: TestClient, test_u
 
 def test_update_category_unauthenticated(client: TestClient, test_user: User, test_new_category: Category):
     response = client.put(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}", json={
+        f"/me/categories/{test_new_category.category_id}", json={
             "name": "Updated"
         }
     )
@@ -302,21 +272,9 @@ def test_update_category_unauthenticated(client: TestClient, test_user: User, te
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_update_category_unauthorized(user1_client: TestClient, multi_user_data):
-    # user1 tries to update user2's category
-    response = user1_client.put(
-        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}", json={
-            "name": "Hacked"
-        }
-    )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_update_category_nonexistent(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/9999", json={
+        "/me/categories/9999", json={
             "name": "Updated"
         }
     )
@@ -327,7 +285,7 @@ def test_update_category_nonexistent(authenticated_client: TestClient, test_user
 
 def test_update_category_empty_name(authenticated_client: TestClient, test_user: User, test_new_category: Category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}", json={
+        f"/me/categories/{test_new_category.category_id}", json={
             "name": ""
         }
     )
@@ -340,7 +298,7 @@ def test_update_category_empty_name(authenticated_client: TestClient, test_user:
 
 def test_delete_category_happy_path(authenticated_client: TestClient, test_user: User, test_new_category: Category):
     response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}"
+        f"/me/categories/{test_new_category.category_id}"
     )
 
     assert response.status_code == 200
@@ -349,32 +307,22 @@ def test_delete_category_happy_path(authenticated_client: TestClient, test_user:
 
     # Verify it's deleted
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}"
+        f"/me/categories/{test_new_category.category_id}"
     )
     assert response.status_code == 404
 
 def test_delete_category_unauthenticated(client: TestClient, test_user: User, test_new_category: Category):
     response = client.delete(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}"
+        f"/me/categories/{test_new_category.category_id}"
     )
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_delete_category_unauthorized(user1_client: TestClient, multi_user_data):
-    # user1 tries to delete user2's category
-    response = user1_client.delete(
-        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}"
-    )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_delete_category_nonexistent(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/categories/9999"
+        "/me/categories/9999"
     )
 
     assert response.status_code == 404
@@ -383,7 +331,7 @@ def test_delete_category_nonexistent(authenticated_client: TestClient, test_user
 
 def test_delete_default_category_should_fail(authenticated_client: TestClient, test_user: User, test_category: Category):
     response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}"
+        f"/me/categories/{test_category.category_id}"
     )
 
     assert response.status_code in [403, 409]
@@ -396,7 +344,7 @@ def test_delete_default_category_should_fail(authenticated_client: TestClient, t
 
 def test_get_expenses_by_category_happy_path(authenticated_client: TestClient, test_user: User, test_category: Category, test_expense: Expense):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}/expenses"
+        f"/me/categories/{test_category.category_id}/expenses"
     )
 
     assert response.status_code == 200
@@ -408,7 +356,7 @@ def test_get_expenses_by_category_happy_path(authenticated_client: TestClient, t
 def test_get_expenses_by_default_category(authenticated_client: TestClient, test_user: User, test_category: Category, test_expense: Expense):
     # test_expense should be in the default category
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}/expenses"
+        f"/me/categories/{test_category.category_id}/expenses"
     )
 
     assert response.status_code == 200
@@ -420,7 +368,7 @@ def test_get_expenses_by_default_category(authenticated_client: TestClient, test
 def test_get_expenses_by_category_empty(authenticated_client: TestClient, test_user: User, test_new_category: Category):
     # test_new_category has no expenses
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_new_category.category_id}/expenses"
+        f"/me/categories/{test_new_category.category_id}/expenses"
     )
 
     assert response.status_code == 200
@@ -446,7 +394,7 @@ def test_get_expenses_by_category_multiple(authenticated_client: TestClient, tes
     test_db.commit()
 
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}/expenses"
+        f"/me/categories/{test_category.category_id}/expenses"
     )
 
     assert response.status_code == 200
@@ -455,7 +403,7 @@ def test_get_expenses_by_category_multiple(authenticated_client: TestClient, tes
 
 def test_get_expenses_by_category_unauthenticated(client: TestClient, test_user: User, test_category: Category):
     response = client.get(
-        f"/users/{test_user.user_id}/categories/{test_category.category_id}/expenses"
+        f"/me/categories/{test_category.category_id}/expenses"
     )
 
     assert response.status_code == 401
@@ -465,7 +413,7 @@ def test_get_expenses_by_category_unauthenticated(client: TestClient, test_user:
 def test_get_expenses_by_category_unauthorized(user1_client: TestClient, multi_user_data):
     # user1 tries to access user2's category expenses
     response = user1_client.get(
-        f"/users/{multi_user_data.user1.user_id}/categories/{multi_user_data.user2_travel_category.category_id}/expenses"
+        f"/me/categories/{multi_user_data.user2_travel_category.category_id}/expenses"
     )
 
     assert response.status_code == 403

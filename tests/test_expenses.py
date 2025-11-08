@@ -7,7 +7,7 @@ from sqlmodel import Session
 # ====================================================================
 def test_read_expense_happy_path(test_expense: Expense, test_user: User, authenticated_client: TestClient):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        f"/me/expenses/{test_expense.expense_id}"
         )
     
     assert response.status_code == 200
@@ -18,26 +18,16 @@ def test_read_expense_nonexistant_expense(test_expense: Expense,
                                           authenticated_client: TestClient, 
                                           test_user: User):
     response = authenticated_client.get(
-        f"/users/{test_user.user_id}/expenses/{2}"
+        f"/me/expenses/{2}"
         )
     
     assert response.status_code == 404
     data = response.json()
     assert data["detail"] == "Expense was not found"
 
-def test_read_expense_nonexistant_user(test_expense: Expense, 
-                                         authenticated_client: TestClient):
-    response = authenticated_client.get(
-        f"/users/{3}/expenses/{test_expense.expense_id}"
-        )
-    
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_read_expense_unauthenticated(test_expense: Expense, test_user: User, client: TestClient):
     response = client.get(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        f"/me/expenses/{test_expense.expense_id}"
         )
     
     assert response.status_code == 401
@@ -50,7 +40,7 @@ def test_read_expense_unauthenticated(test_expense: Expense, test_user: User, cl
 
 def test_add_expense_happy_path(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Cheese",
             "amount": 50,
             "description": "Unforunate lack of judgement"
@@ -66,7 +56,7 @@ def test_add_expense_happy_path(authenticated_client: TestClient, test_user: Use
 
 def test_add_expense_not_authenticated(client: TestClient, test_user: User, test_category):
     response = client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Cheese",
             "amount": 50,
             "description": "Unforunate lack of judgement"
@@ -77,22 +67,9 @@ def test_add_expense_not_authenticated(client: TestClient, test_user: User, test
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_add_expense_unauthorized(authenticated_client: TestClient, test_category):
-    response = authenticated_client.post(
-        f"/users/{3}/expenses/", json={
-            "name": "Cheese",
-            "amount": 50,
-            "description": "Unforunate lack of judgement"
-        }
-        )
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_add_expense_invalid_data(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "",
             "amount": -50,
             "description": "Unforunate lack of judgement"
@@ -103,7 +80,7 @@ def test_add_expense_invalid_data(authenticated_client: TestClient, test_user: U
 
 def test_add_expense_with_category_id(authenticated_client: TestClient, test_user: User, test_new_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Laptop",
             "amount": 1200,
             "category_id": test_new_category.category_id,
@@ -118,7 +95,7 @@ def test_add_expense_with_category_id(authenticated_client: TestClient, test_use
 
 def test_add_expense_without_category_id(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Coffee",
             "amount": 5.50
         }
@@ -131,7 +108,7 @@ def test_add_expense_without_category_id(authenticated_client: TestClient, test_
 
 def test_add_expense_with_invalid_category_id(authenticated_client: TestClient, test_user: User, test_category):
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Invalid",
             "amount": 100,
             "category_id": 9999
@@ -172,7 +149,7 @@ def test_add_expense_with_other_users_category(authenticated_client: TestClient,
 
     # Try to use other user's category
     response = authenticated_client.post(
-        f"/users/{test_user.user_id}/expenses/", json={
+        "/me/expenses/", json={
             "name": "Unauthorized",
             "amount": 100,
             "category_id": other_category.category_id
@@ -190,7 +167,7 @@ def test_add_expense_with_other_users_category(authenticated_client: TestClient,
 
 
 def test_read_all_expenses_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
-    response = authenticated_client.get(f"/users/{test_user.user_id}/expenses/")
+    response = authenticated_client.get("/me/expenses/")
 
     assert response.status_code == 200
     data = response.json()
@@ -198,18 +175,11 @@ def test_read_all_expenses_happy_path(authenticated_client: TestClient, test_use
     assert data[0]["name"] == "Test Expense"
 
 def test_read_all_expenses_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
-    response = client.get(f"/users/{test_user.user_id}/expenses/")
+    response = client.get("/me/expenses/")
 
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
-
-def test_read_all_expenses_unauthorized(user1_client: TestClient, multi_user_data):
-    response = user1_client.get(f"/users/{multi_user_data.user2.user_id}/expenses/")
-
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
 
 # ====================================================================
 # Testing for the delete expense (delete) endpoint in expenses.py
@@ -217,7 +187,7 @@ def test_read_all_expenses_unauthorized(user1_client: TestClient, multi_user_dat
 
 def test_delete_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense):
     response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        f"/me/expenses/{test_expense.expense_id}"
         )
     
     assert response.status_code == 200
@@ -226,25 +196,16 @@ def test_delete_expense_happy_path(authenticated_client: TestClient, test_user: 
 
 def test_delete_expense_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
     response = client.delete(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}"
+        f"/me/expenses/{test_expense.expense_id}"
         )
     
     assert response.status_code == 401
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_delete_expense_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense):
-    response = authenticated_client.delete(
-        f"/users/{3}/expenses/{test_expense.expense_id}"
-        )
-    
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_delete_expense_nonexistent(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.delete(
-        f"/users/{test_user.user_id}/expenses/{999}"
+        "/me/expenses/999"
         )
     
     assert response.status_code == 404
@@ -257,7 +218,7 @@ def test_delete_expense_nonexistent(authenticated_client: TestClient, test_user:
 
 def test_update_expense_happy_path(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_new_category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "name": "Updated Expense",
             "amount": 200.0,
             "category_id": test_new_category.category_id,
@@ -273,7 +234,7 @@ def test_update_expense_happy_path(authenticated_client: TestClient, test_user: 
 
 def test_update_expense_partial(authenticated_client: TestClient, test_user: User, test_expense: Expense):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "name": "Partially Updated"
         }
         )
@@ -285,7 +246,7 @@ def test_update_expense_partial(authenticated_client: TestClient, test_user: Use
 
 def test_update_expense_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
     response = client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "name": "Updated"
         }
         )
@@ -294,20 +255,9 @@ def test_update_expense_unauthenticated(client: TestClient, test_user: User, tes
     data = response.json()
     assert data["detail"] == "Not authenticated"
 
-def test_update_expense_unauthorized(authenticated_client: TestClient, test_user: User, test_expense: Expense):
-    response = authenticated_client.put(
-        f"/users/{3}/expenses/{test_expense.expense_id}", json={
-            "name": "Updated"
-        }
-        )
-    
-    assert response.status_code == 403
-    data = response.json()
-    assert data["detail"] == "Not authorized for this request"
-
 def test_update_expense_nonexistent(authenticated_client: TestClient, test_user: User):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{999}", json={
+        "/me/expenses/999", json={
             "name": "Updated"
         }
         )
@@ -318,7 +268,7 @@ def test_update_expense_nonexistent(authenticated_client: TestClient, test_user:
 
 def test_update_expense_invalid_data(authenticated_client: TestClient, test_user: User, test_expense: Expense):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "name": "",
             "amount": -50
         }
@@ -328,7 +278,7 @@ def test_update_expense_invalid_data(authenticated_client: TestClient, test_user
 
 def test_update_expense_change_category(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_new_category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "category_id": test_new_category.category_id
         }
         )
@@ -340,7 +290,7 @@ def test_update_expense_change_category(authenticated_client: TestClient, test_u
 
 def test_update_expense_to_default_category(authenticated_client: TestClient, test_user: User, test_expense: Expense, test_category):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "name": "Updated Name"
         }
         )
@@ -353,7 +303,7 @@ def test_update_expense_to_default_category(authenticated_client: TestClient, te
 
 def test_update_expense_with_invalid_category(authenticated_client: TestClient, test_user: User, test_expense: Expense):
     response = authenticated_client.put(
-        f"/users/{test_user.user_id}/expenses/{test_expense.expense_id}", json={
+        f"/me/expenses/{test_expense.expense_id}", json={
             "category_id": 9999
         }
         )
@@ -368,7 +318,7 @@ def test_update_expense_with_other_users_category(user1_client: TestClient, mult
 
     # SECURITY TEST: User1 tries to update their expense to use User2's category
     response = user1_client.put(
-        f"/users/{data.user1.user_id}/expenses/{data.user1_expenses[0].expense_id}",
+        f"/me/expenses/{data.user1_expenses[0].expense_id}",
         json={"category_id": data.user2_travel_category.category_id}
     )
 
@@ -381,7 +331,7 @@ def test_add_expense_without_category_uses_correct_default(user1_client: TestCli
 
     # SECURITY TEST: User1 creates expense without category - should use their own default
     response = user1_client.post(
-        f"/users/{data.user1.user_id}/expenses/",
+        "/me/expenses/",
         json={"name": "Test Expense", "amount": 100.0}
     )
 
