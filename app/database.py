@@ -7,7 +7,7 @@ sqlite_file_name = "database.db"
 sqlite_url = settings.DATABASE_URL
 
 
-connect_args = {"check_same_thread": False}
+connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
 engine = create_engine(sqlite_url, connect_args = connect_args)
 
 

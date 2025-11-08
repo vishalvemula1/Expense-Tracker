@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 from .validators import create_string_validators
 from datetime import date
 from sqlmodel import Field, SQLModel
@@ -25,13 +25,13 @@ class ExpenseCreate(ExpenseBase, NoEmptyStringMixinExpense):
 
 class ExpenseUpdate(SQLModel, NoEmptyStringMixinExpense):
     name: str | None = None
-    amount: Optional[PositiveAmount] = None
+    amount: PositiveAmount | None = None
     category_id: int | None = None
     description: str | None = None
 
 class Expense(ExpenseBase, table=True):
     expense_id: int | None = Field(primary_key=True, default=None, description="Primary key")
-    category_id: int = Field(foreign_key="category.category_id") # type: ignore
-    user_id: int = Field(foreign_key="user.user_id")
+    category_id: int = Field(foreign_key="category.category_id", index=True, ondelete="CASCADE") # type: ignore
+    user_id: int = Field(foreign_key="user.user_id", index=True, ondelete="CASCADE")
     date_of_entry: DateCheck
-    date_of_update: Optional[DateCheck] = None
+    date_of_update: DateCheck | None = None

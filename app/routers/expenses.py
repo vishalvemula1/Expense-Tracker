@@ -1,4 +1,4 @@
-from ..dependencies import *
+from ..dependencies import SessionDep, VerifiedExpenseDep, VerifiedOwnerDep
 from fastapi import Query, APIRouter
 from sqlmodel import select
 from typing import Annotated

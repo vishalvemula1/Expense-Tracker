@@ -1,4 +1,4 @@
-from fastapi import Query, APIRouter, HTTPException
+from fastapi import Query, APIRouter
 from ..models import Category, CategoryCreate, CategoryUpdate, Expense
 from ..dependencies import VerifiedCategoryDep, SessionDep, VerifiedOwnerDep
 from ..exceptions import AppExceptions, handle_integrity_error
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/users/{user_id}/categories", tags=["categories"])
 @router.post("/")
 async def create_category(new_category: CategoryCreate, 
                           verified_user: VerifiedOwnerDep, 
-                          session: SessionDep) -> Category:
+                          session: SessionDep) -> Category: #type: ignore
     try:
         category_data = Category.model_validate(new_category, update={"user_id": verified_user.user_id})
 
@@ -25,7 +25,6 @@ async def create_category(new_category: CategoryCreate,
     except IntegrityError as e:
         session.rollback()
         handle_integrity_error(e, context="Category Creation")
-        raise  # This line is unreachable, but helps type checkers
 
 
 @router.get("/{category_id}")
@@ -36,7 +35,7 @@ async def read_category(category: VerifiedCategoryDep) -> Category:
 @router.put("/{category_id}")
 async def update_category(category: VerifiedCategoryDep,
                           update_request: CategoryUpdate,
-                          session: SessionDep) -> Category:
+                          session: SessionDep) -> Category: #type: ignore
     
     if category.is_default:
         raise AppExceptions.DefaultCategoryUneditable
@@ -55,7 +54,6 @@ async def update_category(category: VerifiedCategoryDep,
     except IntegrityError as e:
         session.rollback()
         handle_integrity_error(e, context="Updating Category")
-        raise  # This line is unreachable, but helps type checkers
 
 @router.delete("/{category_id}")
 async def delete_category(category: VerifiedCategoryDep, 

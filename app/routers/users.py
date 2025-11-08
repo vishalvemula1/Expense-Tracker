@@ -1,11 +1,11 @@
-from ..dependencies import *
+from ..dependencies import SessionDep, VerifiedOwnerDep
 from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
 from ..models import Category
 from ..config import default_categories as defaults
 from ..exceptions import handle_integrity_error
 
-from fastapi import APIRouter, Query, Depends, HTTPException
+from fastapi import APIRouter, Query, Depends
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordRequestForm

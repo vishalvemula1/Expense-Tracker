@@ -1,6 +1,6 @@
 from .auth import get_authenticated_user
 from typing import Annotated
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from .models import User, Expense, Category
 from .database import SessionDep
 from .services import get_expense, get_category_or_default
