@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
-
+from contextlib import contextmanager
+from sqlmodel import Session
 class AppExceptions:
     CredentialsException = HTTPException(status_code=401, 
                                       detail="Could not validate credentials",
@@ -45,3 +46,25 @@ def handle_integrity_error(e: IntegrityError, context: str = ""):
     logging.error(f"Unhandled IntegrityError in {context}: {error_info}")
 
     raise IntegrityExceptions.UnknownIntegrityError
+
+@contextmanager
+def db_transaction(session: Session, context: str = ""):
+    """Context manager for database transactions with automatic IntegrityError handling.
+    
+    Usage:
+        with db_transaction(session, "User Creation") as db:
+            db.add(user)
+            db.commit()
+    
+    On IntegrityError, automatically rolls back and raises appropriate HTTPException.
+    """
+    try:
+        yield session
+    
+    except IntegrityError as e:
+        session.rollback()
+        handle_integrity_error(e, context=context)
+    
+    except Exception:
+        session.rollback()
+        raise

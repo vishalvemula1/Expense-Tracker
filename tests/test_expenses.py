@@ -191,8 +191,6 @@ def test_delete_expense_happy_path(authenticated_client: TestClient, test_user: 
         )
     
     assert response.status_code == 200
-    data = response.json()
-    assert data["expense_id"] == test_expense.expense_id
 
 def test_delete_expense_unauthenticated(client: TestClient, test_user: User, test_expense: Expense):
     response = client.delete(

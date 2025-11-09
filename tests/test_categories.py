@@ -302,8 +302,6 @@ def test_delete_category_happy_path(authenticated_client: TestClient, test_user:
     )
 
     assert response.status_code == 200
-    data = response.json()
-    assert data == "Deletion successful"
 
     # Verify it's deleted
     response = authenticated_client.get(

@@ -4,7 +4,6 @@ from fastapi import Depends
 from .models import User, Expense, Category
 from .database import SessionDep
 from .services import get_expense, get_category_or_default
-from .exceptions import AppExceptions
 
 # Re-exported from database for centralized dependency access
 SessionDep = SessionDep

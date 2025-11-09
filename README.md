@@ -1,6 +1,11 @@
 # Expense Tracker API
 
-A RESTful API for personal expense tracking built with FastAPI. My first complete backend project, where I learned that building secure, maintainable APIs is less about writing code and more about making the right architectural decisions.
+A RESTful API for personal expense tracking built with FastAPI. My first complete backend project, where I learned that building secure, maintainable APIs requires architectural thinking—the kind that comes from understanding trade-offs.
+
+
+## Insight
+
+The main takeaway wasn’t just technical — it was learning to think in terms of failure surfaces, maintainability, and human readability instead of lines of code. I realized why frameworks like FastAPI emphasize dependency injection and how those design decisions scale beyond one project.
 
 ## Features
 
@@ -94,21 +99,21 @@ I used AI to help generate many of the tests in this project, but that came with
 
 When I caught this, I realized the tests were written to match the implementation instead of verifying requirements. I had to go back and add proper cross-user security tests, which actually exposed real bugs in my authorization logic. This taught me that AI is a powerful tool for boilerplate, but you need to think critically about *what* you're testing and *why*. Failed tests that expose security issues are infinitely more valuable than passing tests that give false confidence.
 
-This is why I hand-wrote all the core application code (`app/` directory)—security and architecture are too important to delegate. AI can scaffold repetitive patterns, but it often generates code that *works* without being secure, scalable, or maintainable. By keeping AI limited to testing boilerplate while implementing the security-critical parts myself, I gained real understanding of FastAPI's dependency injection, SQLModel relationships, and JWT token validation—knowledge I would've missed if I'd just copy-pasted AI solutions.
+This is why I hand-wrote all the core application code (`app/` directory)—not as a learning exercise, but because AI-generated business logic would have compromised quality. AI scaffolds repetitive patterns well, but it produces code that *works* without being secure, scalable, or maintainable. By keeping AI limited to testing boilerplate while implementing the architecture myself, I gained deep understanding of FastAPI's dependency injection, SQLModel relationships, and JWT token validation—but more importantly, I was able to focus on clean abstractions, proper separation of concerns, and DRY principles. These are architectural decisions that AI-generated code struggles to replicate, and they are what ensure the project is both high-quality and maintainable.
 
 ### 5. The Best Security Bug is the One That Can't Happen
 After fixing those authorization bugs, I stepped back and realized something uncomfortable: **I was writing increasingly complex tests to validate an inherently flawed design.**
 
 My original API structure was `/users/{user_id}/expenses/`. Every endpoint required extracting `user_id` from the URL, validating it against the JWT token, and ensuring they matched. I had tests for every permutation: "What if User A tries to access User B's data? What if the token is valid but the user_id is wrong?" The tests caught bugs, but the architecture *invited* them.
 
-Then it hit me: why am I passing `user_id` in the URL when I already have it in the authenticated token? I refactored the entire API to use `/me` endpoints—`/me`, `/me/expenses/`, `/me/categories/`—where the user is *only* identified by their JWT token. No more URL parameters to exploit.
+Then it hit me: why am I passing `user_id` in the URL when I already have it in the authenticated token? The design was fundamentally wrong. I refactored the entire API to use `/me` endpoints—`/me`, `/me/expenses/`, `/me/categories/`—where the user is *only* identified by their JWT token. No more URL parameters to exploit.
 
-This single architectural change:
+This single architectural decision:
 - **Made cross-user exploits literally impossible**—there's no `user_id` parameter to manipulate
 - **Simplified dependencies drastically**—no more passing and verifying `user_id` everywhere
-- **Cut 10 redundant tests**—tests for "wrong user_id" scenarios no longer made sense
+- **Cut 10 redundant tests**—scenarios that could no longer exist didn't need testing
 
-I learned that **architecture is security**. The best defense isn't just rigorous testing—it's designing systems where entire categories of vulnerabilities can't exist in the first place. Preventing bugs at the design level beats detecting them at the test level every single time.
+This is the kind of architectural thinking AI can't do. It would've generated working code for `/users/{user_id}/` endpoints with all the validation logic, passing all its tests, never questioning whether the design itself was flawed. I learned that **architecture is security**—the best defense isn't rigorous testing, it's designing systems where entire vulnerability classes can't exist. Preventing bugs at the design level beats detecting them at the test level every single time.
 
 ### 6. Python Isn't Just Syntax
 I went in knowing Python basics but came out understanding `TypeVar` for generic functions, Pydantic validators with factory patterns, and FastAPI's dependency injection system. Reading the FastAPI and SQLModel docs deeply (not just skimming) made a huge difference. I learned that understanding *why* a framework makes certain design choices helps you use it properly.

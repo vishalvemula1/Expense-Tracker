@@ -5,6 +5,8 @@ from typing import Annotated
 from ..models import Expense, ExpenseCreate, ExpenseUpdate
 from datetime import date
 from ..services import get_category_or_default
+from ..exceptions import db_transaction
+
 
 router = APIRouter(prefix="/me/expenses", tags=["expenses"])
 
@@ -17,14 +19,16 @@ async def add_expense(verified_user: VerifiedOwnerDep,
                       new_expense: ExpenseCreate, 
                       session: SessionDep) -> Expense:
     
-    category_id = new_expense.category_id
-    category = get_category_or_default(category_id=category_id, user=verified_user, session=session)
+    with db_transaction(session, context="Expense Creation") as db:
+        category_id = new_expense.category_id
+        category = get_category_or_default(category_id=category_id, user=verified_user, session=session)
 
 
-    expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id, "category_id": category.category_id})
+        expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id, "category_id": category.category_id})
 
-    session.add(expense_data)
-    session.commit()
+        session.add(expense_data)
+        session.commit()
+
     session.refresh(expense_data)
 
     return expense_data
@@ -41,16 +45,17 @@ async def read_all_expenses(verified_user: VerifiedOwnerDep,
         .limit(limit)
         .offset(offset)
         ).all()
+    
     return list(expenses)
 
 @router.delete("/{expense_id}")
 async def delete_expense(expense: VerifiedExpenseDep,  
-                         session: SessionDep) -> Expense:
+                         session: SessionDep):
     
     session.delete(expense)
     session.commit()
 
-    return expense
+    return
 
 @router.put("/{expense_id}")
 async def update_expense(expense: VerifiedExpenseDep,
@@ -58,17 +63,19 @@ async def update_expense(expense: VerifiedExpenseDep,
                          update_request: ExpenseUpdate,  
                          session: SessionDep) -> Expense:
     
-    category_id = update_request.category_id
-    category = get_category_or_default(category_id=category_id, user=user, session=session)
+    with db_transaction(session, context="Expense Updation") as db:
+        category_id = update_request.category_id
+        category = get_category_or_default(category_id=category_id, user=user, session=session)
 
-    update_data = update_request.model_dump(exclude_unset=True)
-    update_data.update({"category_id": category.category_id})
+        update_data = update_request.model_dump(exclude_unset=True)
+        update_data.update({"category_id": category.category_id})
 
-    expense.sqlmodel_update(update_data)
-    expense.date_of_update = date.today()
+        expense.sqlmodel_update(update_data)
+        expense.date_of_update = date.today()
 
-    session.add(expense)
-    session.commit()
+        session.add(expense)
+        session.commit()
+
     session.refresh(expense)
 
     return expense

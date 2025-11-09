@@ -3,7 +3,7 @@ from ..models import UserRead, UserCreate, User, UserUpdate, Token
 from ..auth import (authenticate_user, get_password_hash, create_token)
 from ..models import Category
 from ..config import default_categories as defaults
-from ..exceptions import handle_integrity_error
+from ..exceptions import db_transaction
 
 from fastapi import APIRouter, Query, Depends
 from typing import Annotated
@@ -26,8 +26,9 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     
 
 @auth_router.post("/signup", response_model=UserRead)
-async def create_user(user: UserCreate, session: SessionDep) -> User: #type: ignore
-    try: 
+async def create_user(user: UserCreate, session: SessionDep) -> User:
+
+    with db_transaction(session, context="User Signup") as db:
         hashed_password = get_password_hash(user.password)
         user_data_dict = user.model_dump(exclude={"password"})
         new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
@@ -45,13 +46,10 @@ async def create_user(user: UserCreate, session: SessionDep) -> User: #type: ign
         
         session.add(default_category)
         session.commit()
-        session.refresh(new_user)
 
-        return new_user
-    
-    except IntegrityError as e:
-        session.rollback()
-        handle_integrity_error(e, context="User Signup")
+    session.refresh(new_user)
+
+    return new_user
 
 
 router = APIRouter(tags=["users"])
@@ -73,9 +71,11 @@ async def read_users(session: SessionDep,
 @router.put("/me", response_model=UserRead)
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
-                      session: SessionDep) -> User: #type: ignore
-    try:
+                      session: SessionDep) -> User:
+    
+    with db_transaction(session, context="User Updation") as db:
         update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
+        
         if update_request.password:
             hashed_password = get_password_hash(update_request.password)
             update_dict['password_hash'] = hashed_password
@@ -84,12 +84,9 @@ async def update_user(verified_user: VerifiedOwnerDep,
 
         session.add(verified_user)
         session.commit()
-        session.refresh(verified_user)
-        return verified_user
 
-    except IntegrityError as e:
-        session.rollback()
-        handle_integrity_error(e, context="User Updation")
+    session.refresh(verified_user)
+    return verified_user
 
 
 @router.delete("/me")

@@ -1,30 +1,27 @@
 from fastapi import Query, APIRouter
 from ..models import Category, CategoryCreate, CategoryUpdate, Expense
 from ..dependencies import VerifiedCategoryDep, SessionDep, VerifiedOwnerDep
-from ..exceptions import AppExceptions, handle_integrity_error
+from ..exceptions import AppExceptions, db_transaction
 
 from sqlmodel import select
 from typing import Annotated
-from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/me/categories", tags=["categories"])
 
 @router.post("/")
 async def create_category(new_category: CategoryCreate, 
                           verified_user: VerifiedOwnerDep, 
-                          session: SessionDep) -> Category: #type: ignore
-    try:
+                          session: SessionDep) -> Category: 
+    
+    with db_transaction(session, context="Category Creation") as db:
         category_data = Category.model_validate(new_category, update={"user_id": verified_user.user_id})
 
         session.add(category_data)
         session.commit()
-        session.refresh(category_data)
 
-        return category_data
+    session.refresh(category_data)
 
-    except IntegrityError as e:
-        session.rollback()
-        handle_integrity_error(e, context="Category Creation")
+    return category_data
 
 
 @router.get("/{category_id}")
@@ -35,36 +32,35 @@ async def read_category(category: VerifiedCategoryDep) -> Category:
 @router.put("/{category_id}")
 async def update_category(category: VerifiedCategoryDep,
                           update_request: CategoryUpdate,
-                          session: SessionDep) -> Category: #type: ignore
+                          session: SessionDep) -> Category: 
     
     if category.is_default:
         raise AppExceptions.DefaultCategoryUneditable
     
-    try:
+    with db_transaction(session, context="Category Updation") as db:
         update_data = update_request.model_dump(exclude_unset=True)
 
         category.sqlmodel_update(update_data)
         
         session.add(category)
         session.commit()
-        session.refresh(category)
 
-        return category
+    session.refresh(category)
 
-    except IntegrityError as e:
-        session.rollback()
-        handle_integrity_error(e, context="Updating Category")
+    return category
+
 
 @router.delete("/{category_id}")
 async def delete_category(category: VerifiedCategoryDep, 
-                          session: SessionDep) -> str:
+                          session: SessionDep):
+    
     if category.is_default:
         raise AppExceptions.DefaultCategoryUneditable
     
     session.delete(category)
     session.commit()
 
-    return "Deletion successful"
+    return
 
 
 @router.get("/")
