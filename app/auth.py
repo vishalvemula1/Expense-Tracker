@@ -1,34 +1,16 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 from sqlmodel import select
-from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
 
 import jwt 
 from jwt.exceptions import InvalidTokenError
-from pwdlib import PasswordHash
 
 from .exceptions import AppExceptions
 from .database import SessionDep
 from .services import get_user
 from .models import User
-from .config import settings
-
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-pass_hash = PasswordHash.recommended()
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pass_hash.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    return pass_hash.hash(password)
+from .security import verify_password, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, oauth2_scheme
 
 def authenticate_user(username: str, password: str, session: SessionDep) -> User:
      
