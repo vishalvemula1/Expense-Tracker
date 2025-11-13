@@ -51,9 +51,9 @@ def get_expense(expense_id: int, user: User, session: Session) -> Expense:
     return data
     
 def get_category_or_default(category_id: int | None, user: User, session: Session) -> Category:
-    if not category_id:
+    if category_id is None:
         category = session.exec(select(Category).where(Category.user_id == user.user_id, Category.is_default == True)).first()
-        if not category:
+        if category is None:
             raise HTTPException(status_code=404, detail="Default category not found")
         return category
     

@@ -2,7 +2,7 @@ from ..dependencies import SessionDep, VerifiedExpenseDep, VerifiedOwnerDep
 from fastapi import Query, APIRouter
 from sqlmodel import select
 from typing import Annotated
-from ..models import Expense, ExpenseCreate, ExpenseUpdate
+from ..models import Expense, ExpenseCreate, ExpenseUpdate, ExpenseRead
 from datetime import date
 from ..services import get_category_or_default
 from ..exceptions import db_transaction
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/me/expenses", tags=["expenses"])
 async def read_an_expense(expense: VerifiedExpenseDep) -> Expense:
     return expense
 
-@router.post("/")
+@router.post("/", response_model=ExpenseRead)
 async def add_expense(verified_user: VerifiedOwnerDep, 
                       new_expense: ExpenseCreate, 
                       session: SessionDep) -> Expense:
@@ -33,7 +33,7 @@ async def add_expense(verified_user: VerifiedOwnerDep,
 
     return expense_data
 
-@router.get("/")
+@router.get("/", response_model=list[ExpenseRead])
 async def read_all_expenses(verified_user: VerifiedOwnerDep,
                         session: SessionDep, 
                         limit: Annotated[int, Query(le=100)] = 5,
@@ -57,7 +57,7 @@ async def delete_expense(expense: VerifiedExpenseDep,
 
     return
 
-@router.put("/{expense_id}")
+@router.put("/{expense_id}", response_model=ExpenseRead)
 async def update_expense(expense: VerifiedExpenseDep,
                          user: VerifiedOwnerDep, 
                          update_request: ExpenseUpdate,  

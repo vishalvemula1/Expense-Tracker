@@ -27,6 +27,12 @@ class CategoryUpdate(CategoryBase, NoEmptyStringsMixinCategory):
     description: str | None = None
     tag: Color | None = None
 
+
+class CategoryRead(CategoryBase):
+    category_id: int
+    date_of_entry: DateCheck
+    is_default: bool
+
 class Category(CategoryBase, table=True):
     __table_args__ = (UniqueConstraint('name', 'user_id', name='uq_category_name_user'),)
     user_id: int = Field(foreign_key="user.user_id", index=True, ondelete="CASCADE")
