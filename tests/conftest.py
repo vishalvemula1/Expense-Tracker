@@ -1,7 +1,8 @@
 import pytest
-from sqlmodel import create_engine, Session, SQLModel
-from app.auth import get_password_hash, create_token
-from app.models import User, Expense, Category
+from sqlmodel import create_engine, Session, SQLModel, select
+from app.auth import create_token
+from app.services import create_user_with_defaults
+from app.models import User, Expense, Category, UserCreate
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_session
@@ -37,19 +38,14 @@ def client(test_db: Session):
 
 @pytest.fixture
 def test_user(test_db: Session):
-    hashed_pw = get_password_hash("testpassword")
-    test_user = User(
+    """Create a test user with default category using the service function"""
+    user_create = UserCreate(
         username="testuser",
         email="test@example.com",
         salary=50000,
-        password_hash=hashed_pw
+        password="testpassword"
     )
-
-    test_db.add(test_user)
-    test_db.commit()
-    test_db.refresh(test_user)
-
-    return test_user
+    return create_user_with_defaults(user_create, test_db)
 
 @pytest.fixture
 def authenticated_client(client: TestClient, test_user: User):
@@ -63,19 +59,16 @@ def authenticated_client(client: TestClient, test_user: User):
 
 @pytest.fixture
 def test_category(test_db: Session, test_user: User):
+    """Retrieve the auto-created default category for test_user"""
     assert test_user.user_id
-    category = Category(
-        name="Uncategorized",
-        user_id=test_user.user_id,
-        date_of_entry=date.today(),
-        tag="Black", #type: ignore
-        is_default=True
-    )
-
-    test_db.add(category)
-    test_db.commit()
-    test_db.refresh(category)
-
+    # Default category is automatically created by create_user_with_defaults
+    category = test_db.exec(
+        select(Category).where(
+            Category.user_id == test_user.user_id,
+            Category.is_default == True
+        )
+    ).first()
+    assert category is not None, "Default category should exist"
     return category
 
 @pytest.fixture
@@ -132,72 +125,65 @@ class MultiUserData(NamedTuple):
 @pytest.fixture
 def multi_user_data(test_db: Session) -> MultiUserData:
     """Creates 2 users with categories and expenses for security testing"""
-    hashed_pw = get_password_hash("testpassword")
-
-    # Create User 1
-    user1 = User(
+    # Create User 1 with default category
+    user1_create = UserCreate(
         username="user1",
         email="user1@example.com",
         salary=60000,
-        password_hash=hashed_pw
+        password="testpassword"
     )
-    test_db.add(user1)
-    test_db.commit()
-    test_db.refresh(user1)
+    user1 = create_user_with_defaults(user1_create, test_db)
     assert user1.user_id is not None
 
-    # Create User 2
-    user2 = User(
+    # Create User 2 with default category
+    user2_create = UserCreate(
         username="user2",
         email="user2@example.com",
         salary=70000,
-        password_hash=hashed_pw
+        password="testpassword"
     )
-    test_db.add(user2)
-    test_db.commit()
-    test_db.refresh(user2)
+    user2 = create_user_with_defaults(user2_create, test_db)
     assert user2.user_id is not None
 
-    # Create categories for User 1
-    user1_default_cat = Category(
-        name="Uncategorized",
-        user_id=user1.user_id,
-        is_default=True,
-        tag="Black", #type: ignore
-        date_of_entry=date.today()
-    )
+    # Retrieve auto-created default categories
+    user1_default_cat = test_db.exec(
+        select(Category).where(
+            Category.user_id == user1.user_id,
+            Category.is_default == True
+        )
+    ).first()
+    assert user1_default_cat is not None
+
+    user2_default_cat = test_db.exec(
+        select(Category).where(
+            Category.user_id == user2.user_id,
+            Category.is_default == True
+        )
+    ).first()
+    assert user2_default_cat is not None
+
+    # Create additional categories for User 1
     user1_food_cat = Category(
         name="Food",
         user_id=user1.user_id,
         tag="Blue", #type: ignore
         date_of_entry=date.today()
     )
+    test_db.add(user1_food_cat)
+    test_db.commit()
+    test_db.refresh(user1_food_cat)
+    assert user1_food_cat.category_id is not None
 
-    # Create categories for User 2
-    user2_default_cat = Category(
-        name="Uncategorized",
-        user_id=user2.user_id,
-        is_default=True,
-        tag="Black", #type: ignore
-        date_of_entry=date.today()
-    )
+    # Create additional categories for User 2
     user2_travel_cat = Category(
         name="Travel",
         user_id=user2.user_id,
         tag="Red", #type: ignore
         date_of_entry=date.today()
     )
-
-    test_db.add_all([user1_default_cat, user1_food_cat, user2_default_cat, user2_travel_cat])
+    test_db.add(user2_travel_cat)
     test_db.commit()
-    test_db.refresh(user1_default_cat)
-    test_db.refresh(user1_food_cat)
-    test_db.refresh(user2_default_cat)
     test_db.refresh(user2_travel_cat)
-
-    assert user1_default_cat.category_id is not None
-    assert user1_food_cat.category_id is not None
-    assert user2_default_cat.category_id is not None
     assert user2_travel_cat.category_id is not None
 
     # Create expenses for User 1
@@ -212,7 +198,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
         Expense(
             name="Coffee",
             amount=5.0,
-            category_id=user1_default_cat.category_id,
+            category_id=user1_default_cat.category_id, #type: ignore
             user_id=user1.user_id,
             date_of_entry=date.today()
         ),
@@ -230,7 +216,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
         Expense(
             name="Misc",
             amount=20.0,
-            category_id=user2_default_cat.category_id,
+            category_id=user2_default_cat.category_id, #type: ignore
             user_id=user2.user_id,
             date_of_entry=date.today()
         ),

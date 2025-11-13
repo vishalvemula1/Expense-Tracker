@@ -120,7 +120,7 @@ def test_add_expense_with_invalid_category_id(authenticated_client: TestClient, 
     assert data["detail"] == "Category was not found"
 
 def test_add_expense_with_other_users_category(authenticated_client: TestClient, test_user: User, test_db):
-    from app.auth import get_password_hash
+    from app.security import get_password_hash
     from app.models import Category
     from datetime import date
 

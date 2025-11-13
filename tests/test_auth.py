@@ -1,4 +1,5 @@
-from app.auth import authenticate_user, verify_password, create_token, get_authenticated_user 
+from app.auth import authenticate_user, create_token, get_authenticated_user
+from app.security import verify_password
 from fastapi import HTTPException
 from pytest import raises
 from app.models import User

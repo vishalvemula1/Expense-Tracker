@@ -135,7 +135,7 @@ def test_update_user_unauthenticated(client: TestClient,
 def test_update_user_duplicate_username(authenticated_client: TestClient,
                                         test_db: Session,
                                         test_user: User):
-    from app.auth import get_password_hash
+    from app.security import get_password_hash
     # Create another user to cause a duplicate username conflict
     hashed_pw = get_password_hash("testpassword")
     another_user = User(
