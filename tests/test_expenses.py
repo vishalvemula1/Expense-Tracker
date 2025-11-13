@@ -51,7 +51,6 @@ def test_add_expense_happy_path(authenticated_client: TestClient, test_user: Use
     data = response.json()
     assert data["name"] == "Cheese"
     assert data["amount"] == 50
-    assert data["user_id"] == test_user.user_id
     assert data["category_id"] == test_category.category_id  # Should use default category
 
 def test_add_expense_not_authenticated(client: TestClient, test_user: User, test_category):

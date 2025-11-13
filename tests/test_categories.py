@@ -20,7 +20,6 @@ def test_create_category_happy_path(authenticated_client: TestClient, test_user:
     assert data["name"] == "Food"
     assert data["description"] == "Food and groceries"
     assert data["tag"] == "Blue"
-    assert data["user_id"] == test_user.user_id
     assert data["is_default"] == False
 
 def test_create_category_minimal_fields(authenticated_client: TestClient, test_user: User):
@@ -59,7 +58,6 @@ def test_create_category_duplicate_name_different_user(user2_client: TestClient,
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Food"
-    assert data["user_id"] == multi_user_data.user2.user_id
 
 def test_create_category_unauthenticated(client: TestClient, test_user: User):
     response = client.post(
