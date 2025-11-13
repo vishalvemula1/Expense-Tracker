@@ -1,6 +1,6 @@
 from fastapi import Query, APIRouter
 from ..models import Category, CategoryCreate, CategoryUpdate, Expense
-from ..dependencies import VerifiedCategoryDep, SessionDep, VerifiedOwnerDep
+from ..dependencies import VerifiedReadCategoryDep, SessionDep, VerifiedOwnerDep, VerifiedWriteCategoryDep
 from ..exceptions import AppExceptions, db_transaction
 
 from sqlmodel import select
@@ -25,17 +25,14 @@ async def create_category(new_category: CategoryCreate,
 
 
 @router.get("/{category_id}")
-async def read_category(category: VerifiedCategoryDep) -> Category:
+async def read_category(category: VerifiedReadCategoryDep) -> Category:
     return category
 
 
 @router.put("/{category_id}")
-async def update_category(category: VerifiedCategoryDep,
+async def update_category(category: VerifiedWriteCategoryDep,
                           update_request: CategoryUpdate,
                           session: SessionDep) -> Category: 
-    
-    if category.is_default:
-        raise AppExceptions.DefaultCategoryUneditable
     
     with db_transaction(session, context="Category Updation") as db:
         update_data = update_request.model_dump(exclude_unset=True)
@@ -51,11 +48,8 @@ async def update_category(category: VerifiedCategoryDep,
 
 
 @router.delete("/{category_id}")
-async def delete_category(category: VerifiedCategoryDep, 
+async def delete_category(category: VerifiedWriteCategoryDep, 
                           session: SessionDep):
-    
-    if category.is_default:
-        raise AppExceptions.DefaultCategoryUneditable
     
     session.delete(category)
     session.commit()
@@ -79,7 +73,7 @@ async def read_all_categories(user: VerifiedOwnerDep,
     return list(data)
 
 @router.get("/{category_id}/expenses")
-async def read_all_expenses_from_category(category: VerifiedCategoryDep,
+async def read_all_expenses_from_category(category: VerifiedReadCategoryDep,
                                           session: SessionDep) -> list[Expense]:
     category_id = category.category_id
     statement = (select(Expense).where(Expense.category_id == category_id))

@@ -9,7 +9,6 @@ from fastapi import APIRouter, Query, Depends
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.exc import IntegrityError
 from datetime import date
 
 
