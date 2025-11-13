@@ -1,15 +1,15 @@
 from ..dependencies import SessionDep, VerifiedOwnerDep
 from ..models import UserRead, UserCreate, User, UserUpdate, Token
-from ..auth import (authenticate_user, get_password_hash, create_token)
-from ..models import Category
-from ..config import default_categories as defaults
+from ..auth import (authenticate_user, create_token)
 from ..exceptions import db_transaction
+from ..services import create_user_with_defaults
+from ..security import get_password_hash
 
 from fastapi import APIRouter, Query, Depends
 from typing import Annotated
 from sqlmodel import select
 from fastapi.security import OAuth2PasswordRequestForm
-from datetime import date
+
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -26,29 +26,8 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 
 @auth_router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, session: SessionDep) -> User:
+    return create_user_with_defaults(user, session)
 
-    with db_transaction(session, context="User Signup") as db:
-        hashed_password = get_password_hash(user.password)
-        user_data_dict = user.model_dump(exclude={"password"})
-        new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
-
-        session.add(new_user)
-        session.flush()
-
-        # Creating a default category for every new user called "Uncategorized"
-        default_category = Category(name = defaults.DEFAULT_CATEGORY_NAME,
-                                    user_id = new_user.user_id, # type: ignore
-                                    description = defaults.DEFAULT_CATEGORY_DESCRIPTION,
-                                    tag = defaults.DEFAULT_CATEGORY_TAG, # type: ignore
-                                    date_of_entry = date.today(),
-                                    is_default = True)
-        
-        session.add(default_category)
-        session.commit()
-
-    session.refresh(new_user)
-
-    return new_user
 
 
 router = APIRouter(tags=["users"])

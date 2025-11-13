@@ -1,11 +1,38 @@
 from typing import TypeVar, Type
 from fastapi import HTTPException
 from sqlmodel import SQLModel, Session, select
-from .models import Expense, User
+from .models import Expense, User, UserCreate
 from .models import Category
-from .exceptions import AppExceptions
+from .exceptions import AppExceptions, db_transaction
+from .config import default_categories as defaults
+from datetime import date
+from .security import get_password_hash
 
 ModelType = TypeVar('ModelType', bound=SQLModel)
+
+def create_user_with_defaults(user: UserCreate, session: Session) -> User:
+    with db_transaction(session, context="User Signup") as db:
+        hashed_password = get_password_hash(user.password)
+        user_data_dict = user.model_dump(exclude={"password"})
+        new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
+
+        session.add(new_user)
+        session.flush()
+
+        # Creating a default category for every new user called "Uncategorized"
+        default_category = Category(name = defaults.DEFAULT_CATEGORY_NAME,
+                                    user_id = new_user.user_id, # type: ignore
+                                    description = defaults.DEFAULT_CATEGORY_DESCRIPTION,
+                                    tag = defaults.DEFAULT_CATEGORY_TAG, # type: ignore
+                                    date_of_entry = date.today(),
+                                    is_default = True)
+        
+        session.add(default_category)
+        session.commit()
+
+    session.refresh(new_user)
+
+    return new_user
 
 def get_object_or_404(model: Type[ModelType], object_id: int, session: Session) -> ModelType:
     object_data = session.get(model, object_id)
