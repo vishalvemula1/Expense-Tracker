@@ -80,7 +80,7 @@ Building this project from scratch taught me more than any tutorial could. Here 
 ### 1. Designing the Category System
 The hardest part wasn't writing the code—it was figuring out *what* to write. I knew I wanted expenses to have categories, but then I realized: what if a user creates an expense before making any categories? Should it fail? Should category be optional?
 
-I decided every expense *needs* a category, so I implemented an auto-generated "Uncategorized" default for each user. But then came another problem: how do I prevent users from editing or deleting this special category? I ended up adding an `is_default` flag and protection logic in the update/delete endpoints.
+I decided every expense *needs* a category, so I implemented an auto-generated "Uncategorized" default for each user. But then came another problem: how do I prevent users from editing or deleting this special category? I ended up adding an `is_default` flag and protection logic in the update/delete endpoints. However later on, I moved the protection logic into its own dependency to make it more robust as one write endpoint where the developer forgets to add this check could end up in a very bad situation for the user and delete all the uncategorized expenses by accident.
 
 This taught me that API design is as much about anticipating user behavior as it is about writing clean code.
 
