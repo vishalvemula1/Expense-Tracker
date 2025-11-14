@@ -39,10 +39,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   signup: async (data: SignupRequest) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await apiClient.signup(data);
-      apiClient.setToken(response.access_token);
+      // Create the user account
+      await apiClient.signup(data);
 
-      // Fetch user data after signup
+      // Automatically login with the new credentials
+      const loginResponse = await apiClient.login({
+        username: data.username,
+        password: data.password,
+      });
+      apiClient.setToken(loginResponse.access_token);
+
+      // Fetch user data
       const user = await apiClient.getMe();
       set({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {

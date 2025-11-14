@@ -88,8 +88,8 @@ class APIClient {
   }
 
   // Auth endpoints
-  async signup(data: SignupRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/signup', {
+  async signup(data: SignupRequest): Promise<User> {
+    const response = await this.request<User>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     });
