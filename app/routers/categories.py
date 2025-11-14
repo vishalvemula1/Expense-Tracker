@@ -6,9 +6,9 @@ from ..exceptions import db_transaction
 from sqlmodel import select
 from typing import Annotated
 
-router = APIRouter(prefix="/me/categories", tags=["categories"])
+category_router = APIRouter(prefix="/me/categories", tags=["categories"])
 
-@router.post("/", response_model=CategoryRead)
+@category_router.post("/", response_model=CategoryRead)
 async def create_category(new_category: CategoryCreate, 
                           verified_user: VerifiedOwnerDep, 
                           session: SessionDep) -> Category: 
@@ -24,12 +24,12 @@ async def create_category(new_category: CategoryCreate,
     return category_data
 
 
-@router.get("/{category_id}", response_model=CategoryRead)
+@category_router.get("/{category_id}", response_model=CategoryRead)
 async def read_category(category: VerifiedReadCategoryDep) -> Category:
     return category
 
 
-@router.put("/{category_id}", response_model=CategoryRead)
+@category_router.put("/{category_id}", response_model=CategoryRead)
 async def update_category(category: VerifiedWriteCategoryDep,
                           update_request: CategoryUpdate,
                           session: SessionDep) -> Category: 
@@ -47,7 +47,7 @@ async def update_category(category: VerifiedWriteCategoryDep,
     return category
 
 
-@router.delete("/{category_id}")
+@category_router.delete("/{category_id}")
 async def delete_category(category: VerifiedWriteCategoryDep, 
                           session: SessionDep):
     
@@ -57,7 +57,7 @@ async def delete_category(category: VerifiedWriteCategoryDep,
     return
 
 
-@router.get("/", response_model=list[CategoryRead])
+@category_router.get("/", response_model=list[CategoryRead])
 async def read_all_categories(user: VerifiedOwnerDep, 
                               session: SessionDep,
                               limit: Annotated[int, Query(le=100)] = 5,
@@ -72,7 +72,7 @@ async def read_all_categories(user: VerifiedOwnerDep,
 
     return list(data)
 
-@router.get("/{category_id}/expenses", response_model=list[ExpenseRead])
+@category_router.get("/{category_id}/expenses", response_model=list[ExpenseRead])
 async def read_all_expenses_from_category(category: VerifiedReadCategoryDep,
                                           session: SessionDep) -> list[Expense]:
     category_id = category.category_id

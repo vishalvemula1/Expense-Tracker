@@ -1,43 +1,21 @@
 from ..dependencies import SessionDep, VerifiedOwnerDep
-from ..models import UserRead, UserCreate, User, UserUpdate, Token
-from ..auth import (authenticate_user, create_token)
+from ..models import UserRead, User, UserUpdate
 from ..exceptions import db_transaction
-from ..services import create_user_with_defaults
 from ..security import get_password_hash
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 from typing import Annotated
 from sqlmodel import select
-from fastapi.security import OAuth2PasswordRequestForm
 
 
+user_router = APIRouter(tags=["users"])
 
-auth_router = APIRouter(prefix="/auth", tags=["auth"])
-
-@auth_router.post("/login", response_model=Token)
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
-                session: SessionDep) -> Token:
-    
-    user = authenticate_user(form_data.username, form_data.password, session)
-    
-    token = create_token(user.user_id) #type: ignore
-    return Token(access_token=token, token_type="bearer")
-    
-
-@auth_router.post("/signup", response_model=UserRead)
-async def create_user(user: UserCreate, session: SessionDep) -> User:
-    return create_user_with_defaults(user, session)
-
-
-
-router = APIRouter(tags=["users"])
-
-@router.get("/me", response_model=UserRead)
+@user_router.get("/me", response_model=UserRead)
 async def read_user(verified_user: VerifiedOwnerDep) -> User:
     return verified_user
 
 
-@router.get("/", response_model=list[UserRead])
+@user_router.get("/", response_model=list[UserRead])
 async def read_users(session: SessionDep, 
                      offset: int = 0, 
                      limit: Annotated[int, Query(le=100)] = 100) -> list[User]:
@@ -46,7 +24,7 @@ async def read_users(session: SessionDep,
     return list(users)
 
 
-@router.put("/me", response_model=UserRead)
+@user_router.put("/me", response_model=UserRead)
 async def update_user(verified_user: VerifiedOwnerDep, 
                       update_request: UserUpdate, 
                       session: SessionDep) -> User:
@@ -67,7 +45,7 @@ async def update_user(verified_user: VerifiedOwnerDep,
     return verified_user
 
 
-@router.delete("/me")
+@user_router.delete("/me")
 async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
     session.delete(verified_user)
     session.commit()

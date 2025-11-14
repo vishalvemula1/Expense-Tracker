@@ -8,7 +8,6 @@ from .config import default_categories as defaults
 from datetime import date
 from .security import get_password_hash
 
-ModelType = TypeVar('ModelType', bound=SQLModel)
 
 def create_user_with_defaults(user: UserCreate, session: Session) -> User:
     with db_transaction(session, context="User Signup") as db:
@@ -33,6 +32,10 @@ def create_user_with_defaults(user: UserCreate, session: Session) -> User:
     session.refresh(new_user)
 
     return new_user
+
+
+
+ModelType = TypeVar('ModelType', bound=SQLModel)
 
 def get_object_or_404(model: Type[ModelType], object_id: int, session: Session) -> ModelType:
     object_data = session.get(model, object_id)

@@ -1,6 +1,6 @@
-from .expenses import router as expenses_router
-from .users import router as users_router
-from .users import auth_router
-from .categories import router as categories_router
+from .expenses import expense_router
+from .users import user_router
+from .auth import auth_router
+from .categories import category_router
 
-__all__ = ["expenses_router", "users_router", "categories_router", "auth_router"]
+__all__ = ["expense_router", "user_router", "category_router", "auth_router"]

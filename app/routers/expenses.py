@@ -8,13 +8,13 @@ from ..services import get_category_or_default
 from ..exceptions import db_transaction
 
 
-router = APIRouter(prefix="/me/expenses", tags=["expenses"])
+expense_router = APIRouter(prefix="/me/expenses", tags=["expenses"])
 
-@router.get("/{expense_id}")
+@expense_router.get("/{expense_id}")
 async def read_an_expense(expense: VerifiedExpenseDep) -> Expense:
     return expense
 
-@router.post("/", response_model=ExpenseRead)
+@expense_router.post("/", response_model=ExpenseRead)
 async def add_expense(verified_user: VerifiedOwnerDep, 
                       new_expense: ExpenseCreate, 
                       session: SessionDep) -> Expense:
@@ -33,7 +33,7 @@ async def add_expense(verified_user: VerifiedOwnerDep,
 
     return expense_data
 
-@router.get("/", response_model=list[ExpenseRead])
+@expense_router.get("/", response_model=list[ExpenseRead])
 async def read_all_expenses(verified_user: VerifiedOwnerDep,
                         session: SessionDep, 
                         limit: Annotated[int, Query(le=100)] = 5,
@@ -48,7 +48,7 @@ async def read_all_expenses(verified_user: VerifiedOwnerDep,
     
     return list(expenses)
 
-@router.delete("/{expense_id}")
+@expense_router.delete("/{expense_id}")
 async def delete_expense(expense: VerifiedExpenseDep,  
                          session: SessionDep):
     
@@ -57,7 +57,7 @@ async def delete_expense(expense: VerifiedExpenseDep,
 
     return
 
-@router.put("/{expense_id}", response_model=ExpenseRead)
+@expense_router.put("/{expense_id}", response_model=ExpenseRead)
 async def update_expense(expense: VerifiedExpenseDep,
                          user: VerifiedOwnerDep, 
                          update_request: ExpenseUpdate,  
