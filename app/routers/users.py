@@ -1,53 +1,22 @@
-from ..dependencies import SessionDep, VerifiedOwnerDep
 from ..models import UserRead, User, UserUpdate
-from ..exceptions import db_transaction
-from ..security import get_password_hash
-
-from fastapi import APIRouter, Query
+from ..services import UserService, get_user_service
 from typing import Annotated
-from sqlmodel import select
+from fastapi import APIRouter, Depends
+
 
 
 user_router = APIRouter(tags=["users"])
 
 @user_router.get("/me", response_model=UserRead)
-async def read_user(verified_user: VerifiedOwnerDep) -> User:
-    return verified_user
-
-
-@user_router.get("/", response_model=list[UserRead])
-async def read_users(session: SessionDep, 
-                     offset: int = 0, 
-                     limit: Annotated[int, Query(le=100)] = 100) -> list[User]:
-    
-    users = session.exec(select(User).limit(limit).offset(offset)).all()
-    return list(users)
-
+async def get_user(svc: Annotated[UserService, Depends(get_user_service)]) -> User:
+    return svc.get()
 
 @user_router.put("/me", response_model=UserRead)
-async def update_user(verified_user: VerifiedOwnerDep, 
-                      update_request: UserUpdate, 
-                      session: SessionDep) -> User:
-    
-    with db_transaction(session, context="User Updation") as db:
-        update_dict = update_request.model_dump(exclude_unset=True, exclude={"password"})
-        
-        if update_request.password:
-            hashed_password = get_password_hash(update_request.password)
-            update_dict['password_hash'] = hashed_password
+async def update_user(update_request: UserUpdate,
+                      svc: Annotated[UserService, Depends(get_user_service)]) -> User:
 
-        verified_user.sqlmodel_update(update_dict)
-
-        session.add(verified_user)
-        session.commit()
-
-    session.refresh(verified_user)
-    return verified_user
-
+    return svc.update(update_request)
 
 @user_router.delete("/me")
-async def delete_user(verified_user: VerifiedOwnerDep, session: SessionDep):
-    session.delete(verified_user)
-    session.commit()
-
-    return
+async def delete_user(svc: Annotated[UserService, Depends(get_user_service)]):
+    svc.delete()

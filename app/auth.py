@@ -3,12 +3,11 @@ from typing import Annotated, Any
 from sqlmodel import select
 from fastapi import Depends
 
-import jwt 
+import jwt
 from jwt.exceptions import InvalidTokenError
 
 from .exceptions import AppExceptions
 from .database import SessionDep
-from .services import get_user
 from .models import User
 from .security import verify_password, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, oauth2_scheme
 
@@ -42,19 +41,20 @@ def create_token(user_id: int,
     return encoded_jwt
     
 
-async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)], 
+async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
                                  session: SessionDep) -> User:
-    
+    from .services.user_service import UserService
+
     try:
         payload: dict[str, Any] = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
             raise AppExceptions.CredentialsException
-        
+
     except InvalidTokenError:
         raise AppExceptions.CredentialsException
-    
-    user = get_user(user_id, session=session)
+
+    user = UserService.get_user(user_id, session=session)
     return user
         
 
