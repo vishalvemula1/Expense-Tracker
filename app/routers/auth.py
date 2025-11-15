@@ -8,15 +8,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
 @auth_router.post("/login", response_model=Token)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
-                svc: Annotated[AuthService, Depends(get_auth_service)]) -> Token:
+                svc: AuthServiceDep) -> Token:
     
     return svc.login(form_data)
     
 
 @auth_router.post("/signup", response_model=UserRead)
 async def create_user(user: UserCreate, 
-                      svc: Annotated[AuthService, Depends(get_auth_service)]) -> User:
+                      svc: AuthServiceDep) -> User:
     
     return svc.create_user_with_defaults(user)
