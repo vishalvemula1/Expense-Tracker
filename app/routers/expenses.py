@@ -1,81 +1,36 @@
-from ..dependencies import SessionDep, VerifiedExpenseDep, VerifiedOwnerDep
-from fastapi import Query, APIRouter
-from sqlmodel import select
+from fastapi import Query, APIRouter, Depends
 from typing import Annotated
 from ..models import Expense, ExpenseCreate, ExpenseUpdate, ExpenseRead
-from datetime import date
-from ..services import get_category_or_default
-from ..exceptions import db_transaction
-
+from ..services import ExpenseService, get_expense_service
 
 expense_router = APIRouter(prefix="/me/expenses", tags=["expenses"])
 
 @expense_router.get("/{expense_id}")
-async def read_an_expense(expense: VerifiedExpenseDep) -> Expense:
-    return expense
+async def get_expense(svc: Annotated[ExpenseService, Depends(get_expense_service)],
+                      expense_id: int) -> Expense:
+
+    return svc.get(expense_id)
 
 @expense_router.post("/", response_model=ExpenseRead)
-async def add_expense(verified_user: VerifiedOwnerDep, 
-                      new_expense: ExpenseCreate, 
-                      session: SessionDep) -> Expense:
-    
-    with db_transaction(session, context="Expense Creation") as db:
-        category_id = new_expense.category_id
-        category = get_category_or_default(category_id=category_id, user=verified_user, session=session)
+async def create_expense(svc: Annotated[ExpenseService, Depends(get_expense_service)],
+                         new_expense: ExpenseCreate) -> Expense:
 
-
-        expense_data = Expense.model_validate(new_expense, update={"user_id": verified_user.user_id, "category_id": category.category_id})
-
-        session.add(expense_data)
-        session.commit()
-
-    session.refresh(expense_data)
-
-    return expense_data
+    return svc.create(new_expense)
 
 @expense_router.get("/", response_model=list[ExpenseRead])
-async def read_all_expenses(verified_user: VerifiedOwnerDep,
-                        session: SessionDep, 
+async def list_expenses(svc: Annotated[ExpenseService, Depends(get_expense_service)],
                         limit: Annotated[int, Query(le=100)] = 5,
                         offset: int = 0) -> list[Expense]:
-    
-    expenses = session.exec(
-        select(Expense)
-        .where(Expense.user_id == verified_user.user_id)
-        .limit(limit)
-        .offset(offset)
-        ).all()
-    
-    return list(expenses)
+
+    return svc.list(limit, offset)
 
 @expense_router.delete("/{expense_id}")
-async def delete_expense(expense: VerifiedExpenseDep,  
-                         session: SessionDep):
-    
-    session.delete(expense)
-    session.commit()
-
-    return
+async def delete_expense(svc: Annotated[ExpenseService, Depends(get_expense_service)], expense_id: int):
+    svc.delete(expense_id)
 
 @expense_router.put("/{expense_id}", response_model=ExpenseRead)
-async def update_expense(expense: VerifiedExpenseDep,
-                         user: VerifiedOwnerDep, 
-                         update_request: ExpenseUpdate,  
-                         session: SessionDep) -> Expense:
-    
-    with db_transaction(session, context="Expense Updation") as db:
-        category_id = update_request.category_id
-        category = get_category_or_default(category_id=category_id, user=user, session=session)
+async def update_expense(svc: Annotated[ExpenseService, Depends(get_expense_service)],
+                         expense_id: int,
+                         update_request: ExpenseUpdate) -> Expense:
 
-        update_data = update_request.model_dump(exclude_unset=True)
-        update_data.update({"category_id": category.category_id})
-
-        expense.sqlmodel_update(update_data)
-        expense.date_of_update = date.today()
-
-        session.add(expense)
-        session.commit()
-
-    session.refresh(expense)
-
-    return expense
+    return svc.update(expense_id, update_request)
