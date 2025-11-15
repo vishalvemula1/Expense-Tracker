@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
-from app.models import User, Expense
-from sqlmodel import Session
+from app.models import User, Expense, UserCreate, Category
+from app.services.auth_service import AuthService
+from sqlmodel import Session, select
+from datetime import date
 
 # ====================================================================
 # Testing for the read expense (get) endpoint in expenses.py
@@ -119,21 +121,13 @@ def test_add_expense_with_invalid_category_id(authenticated_client: TestClient, 
     assert data["detail"] == "Category was not found"
 
 def test_add_expense_with_other_users_category(authenticated_client: TestClient, test_user: User, test_db):
-    from app.security import get_password_hash
-    from app.models import Category
-    from datetime import date
-
-    # Create another user with their own category
-    hashed_pw = get_password_hash("password")
-    other_user = User(
+    auth_service = AuthService(test_db)
+    other_user = auth_service.create_user_with_defaults(UserCreate(
         username="otheruser",
         email="other@example.com",
-        password_hash=hashed_pw,
+        password="password",
         salary=50000
-    )
-    test_db.add(other_user)
-    test_db.commit()
-    test_db.refresh(other_user)
+    ))
 
     assert other_user.user_id is not None
 

@@ -1,7 +1,7 @@
 import pytest
 from sqlmodel import create_engine, Session, SQLModel, select
 from app.auth import create_token
-from app.services import create_user_with_defaults
+from app.services.auth_service import AuthService
 from app.models import User, Expense, Category, UserCreate
 from fastapi.testclient import TestClient
 from app.main import app
@@ -45,7 +45,8 @@ def test_user(test_db: Session):
         salary=50000,
         password="testpassword"
     )
-    return create_user_with_defaults(user_create, test_db)
+    auth_service = AuthService(test_db)
+    return auth_service.create_user_with_defaults(user_create)
 
 @pytest.fixture
 def authenticated_client(client: TestClient, test_user: User):
@@ -125,6 +126,8 @@ class MultiUserData(NamedTuple):
 @pytest.fixture
 def multi_user_data(test_db: Session) -> MultiUserData:
     """Creates 2 users with categories and expenses for security testing"""
+    auth_service = AuthService(test_db)
+
     # Create User 1 with default category
     user1_create = UserCreate(
         username="user1",
@@ -132,7 +135,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
         salary=60000,
         password="testpassword"
     )
-    user1 = create_user_with_defaults(user1_create, test_db)
+    user1 = auth_service.create_user_with_defaults(user1_create)
     assert user1.user_id is not None
 
     # Create User 2 with default category
@@ -142,7 +145,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
         salary=70000,
         password="testpassword"
     )
-    user2 = create_user_with_defaults(user2_create, test_db)
+    user2 = auth_service.create_user_with_defaults(user2_create)
     assert user2.user_id is not None
 
     # Retrieve auto-created default categories

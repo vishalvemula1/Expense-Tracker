@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from app.models import User
+from app.models import User, UserCreate
+from app.services.auth_service import AuthService
 
 
 
@@ -60,17 +61,13 @@ def test_update_user_unauthenticated(client: TestClient,
 def test_update_user_duplicate_username(authenticated_client: TestClient,
                                         test_db: Session,
                                         test_user: User):
-    from app.security import get_password_hash
-    # Create another user to cause a duplicate username conflict
-    hashed_pw = get_password_hash("testpassword")
-    another_user = User(
+    auth_service = AuthService(test_db)
+    auth_service.create_user_with_defaults(UserCreate(
         username="existinguser",
         email="existing@example.com",
-        password_hash=hashed_pw,
+        password="testpassword",
         salary=50000
-    )
-    test_db.add(another_user)
-    test_db.commit()
+    ))
 
     response = authenticated_client.put("/me", json={
         "username": "existinguser"
