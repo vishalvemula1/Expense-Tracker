@@ -2,6 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from contextlib import contextmanager
 from sqlmodel import Session
+
+
 class AppExceptions:
     CredentialsException = HTTPException(status_code=401, 
                                       detail="Could not validate credentials",
@@ -24,6 +26,7 @@ class IntegrityExceptions:
     EmailExists = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
 
     CategoryNameExists = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category with the same name already exists")
+
 
 
 def handle_integrity_error(e: IntegrityError, context: str = ""):

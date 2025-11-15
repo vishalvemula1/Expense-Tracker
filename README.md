@@ -1,142 +1,379 @@
-# Expense Tracker API
-
-A RESTful API for personal expense tracking built with FastAPI. My first complete backend project, where I learned that building secure, maintainable APIs requires architectural thinking—the kind that comes from understanding trade-offs.
+# Expense Tracker API# Expense Tracker API
 
 
-## Insight
 
-The main takeaway wasn’t just technical — it was learning to think in terms of failure surfaces, maintainability, and human readability instead of lines of code. I realized why frameworks like FastAPI emphasize dependency injection and how those design decisions scale beyond one project.
+A RESTful multi-user backend built with FastAPI and SQLModel. The focus is straightforward: clean structure, predictable behavior, and security that comes from architectural choices rather than patches.A RESTful multi-user backend built with FastAPI and SQLModel. The focus is straightforward: clean structure, predictable behavior, and security that comes from architectural choices rather than patches.
 
-## Features
 
-- **JWT Authentication** - Token-based auth with secure password hashing (never storing plaintext passwords)
-- **Category Management** - Organize expenses with custom categories, automatically creating an "Uncategorized" default for each user
-- **Full CRUD Operations** - Complete expense lifecycle management with proper validation
-- **Secure-by-Design Architecture** - Token-based `/me` endpoints that make cross-user exploits architecturally impossible
-- **85+ Tests** - Comprehensive test coverage focusing on real security scenarios and edge cases
 
-## Tech Stack
+This is a small but intentionally designed service that handles real multi-user rules, ownership, and validation without relying on framework magic or scaffolding.This is a small but intentionally designed service that handles real multi-user rules, ownership, and validation without relying on framework magic or scaffolding.
 
-- **FastAPI** - Modern, fast web framework with automatic API documentation
-- **SQLModel** - Type-safe ORM combining SQLAlchemy and Pydantic
-- **SQLite** - Lightweight database for development
-- **JWT** - Secure token-based authentication
-- **Pytest** - Testing framework with async support
 
-## Quick Start
 
-```bash
-# Clone and setup
-git clone https://github.com/vishalvemula1/expense-tracker.git
-cd expense-tracker
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r app/requirements.txt
+------
 
-# Configure environment (create .env file)
-SECRET_KEY=your_secret_key_here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-# Run the API
-uvicorn app.main:app --reload
 
-# Run tests
-pytest
-```
+## ✨ Highlights## ✨ Highlights
 
-The API will be available at `http://127.0.0.1:8000` with interactive docs at `/docs`.
 
-## API Overview
 
-### Authentication
-- `POST /auth/signup` - Create account
-- `POST /auth/login` - Get JWT token
+- **Multi-user architecture** with ownership validated through dependencies- **Multi-user architecture** with ownership validated through dependencies
 
-### User Management
-- `GET /me` - Get your profile
-- `PUT /me` - Update your details
-- `DELETE /me` - Delete your account
+- **/me endpoint design** removes user-parameter edge cases entirely- **/me endpoint design** removes user-parameter edge cases entirely
 
-### Categories
-- `POST /me/categories/` - Create category
-- `GET /me/categories/` - List your categories
-- `GET /me/categories/{category_id}` - Get specific category
-- `PUT /me/categories/{category_id}` - Update category
-- `DELETE /me/categories/{category_id}` - Delete category
-- `GET /me/categories/{category_id}/expenses` - Get expenses by category
+- **Clear domain rules**: composite uniqueness, default-category protection, and proper schema constraints- **Clear domain rules**: composite uniqueness, default-category protection, and proper schema constraints
 
-### Expenses
-- `POST /me/expenses/` - Create expense
-- `GET /me/expenses/` - List your expenses (with optional category filter)
-- `GET /me/expenses/{expense_id}` - Get specific expense
-- `PUT /me/expenses/{expense_id}` - Update expense
-- `DELETE /me/expenses/{expense_id}` - Delete expense
+- **Transaction-scoped DB operations** with structured integrity handling- **Transaction-scoped DB operations** with structured integrity handling
 
-## What I Learned
+- **Comprehensive test suite** covering security paths and edge cases- **Comprehensive test suite** covering security paths and edge cases
 
-Building this project from scratch taught me more than any tutorial could. Here are the biggest challenges I faced:
 
-### 1. Designing the Category System
-The hardest part wasn't writing the code—it was figuring out *what* to write. I knew I wanted expenses to have categories, but then I realized: what if a user creates an expense before making any categories? Should it fail? Should category be optional?
 
-I decided every expense *needs* a category, so I implemented an auto-generated "Uncategorized" default for each user. But then came another problem: how do I prevent users from editing or deleting this special category? I ended up adding an `is_default` flag and protection logic in the update/delete endpoints. However later on, I moved the protection logic into its own dependency to make it more robust as one write endpoint where the developer forgets to add this check could end up in a very bad situation for the user and delete all the uncategorized expenses by accident.
+------
 
-This taught me that API design is as much about anticipating user behavior as it is about writing clean code.
 
-### 2. Database Constraints and Multi-User Design
-Initially, I made category names globally unique—meaning if one user created a "Food" category, nobody else could. Rookie mistake. I learned about composite unique constraints (`UniqueConstraint('name', 'user_id')`) to make names unique *per user* instead.
 
-This pattern repeated throughout the project: thinking through edge cases like "what if two users try to do the same thing?" shaped how I designed the entire database schema.
+## 🚀 Features## 🚀 Features
 
-### 3. Where Does Logic Go?
-Early on, I tried putting password hashing inside the SQLModel class. It seemed logical, since it would enforce hashing upon creation so I wouldn't have to worry about missing anything within endpoints, it felt like something that could just be abstracted away from the main logic for "cleaner code" but I was wrong. I learned the hard way that **models define data structure**, while **business logic belongs in endpoints or service layers** and trying to hash it in the model was definitely not clean and felt out of place.
 
-When I hit circular import issues between `dependencies.py` and `auth.py`, I had to refactor everything. I created a separate `services.py` file to centralize business logic, which made the codebase way more maintainable. This taught me that good architecture isn't about clever tricks—it's about clear separation of concerns.
 
-### 4. Learning to Use (and Critique) AI-Generated Code
-I used AI to help generate many of the tests in this project, but that came with a hard lesson: **AI optimizes for passing tests, not secure code**. The AI generated dozens of tests that all passed perfectly, but it missed critical security tests like "can User A update an expense with User B's category?".
+- **JWT Authentication**—Token-based auth with secure password hashing- **JWT Authentication**—Token-based auth with secure password hashing
 
-When I caught this, I realized the tests were written to match the implementation instead of verifying requirements. I had to go back and add proper cross-user security tests, which actually exposed real bugs in my authorization logic. This taught me that AI is a powerful tool for boilerplate, but you need to think critically about *what* you're testing and *why*. Failed tests that expose security issues are infinitely more valuable than passing tests that give false confidence.
+- **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design- **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design
 
-This is why I hand-wrote all the core application code (`app/` directory)—not as a learning exercise, but because AI-generated business logic would have compromised quality. AI scaffolds repetitive patterns well, but it produces code that *works* without being secure, scalable, or maintainable. By keeping AI limited to testing boilerplate while implementing the architecture myself, I gained deep understanding of FastAPI's dependency injection, SQLModel relationships, and JWT token validation—but more importantly, I was able to focus on clean abstractions, proper separation of concerns, and DRY principles. These are architectural decisions that AI-generated code struggles to replicate, and they are what ensure the project is both high-quality and maintainable.
+- **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user- **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
 
-### 5. The Best Security Bug is the One That Can't Happen
-After fixing those authorization bugs, I stepped back and realized something uncomfortable: **I was writing increasingly complex tests to validate an inherently flawed design.**
+- **Full CRUD for Expenses & Categories**—With proper validation and ownership checks- **Full CRUD for Expenses & Categories**—With proper validation and ownership checks
 
-My original API structure was `/users/{user_id}/expenses/`. Every endpoint required extracting `user_id` from the URL, validating it against the JWT token, and ensuring they matched. I had tests for every permutation: "What if User A tries to access User B's data? What if the token is valid but the user_id is wrong?" The tests caught bugs, but the architecture *invited* them.
+- **85+ Tests**—Security-focused, cross-user, edge cases, and core logic- **85+ Tests**—Security-focused, cross-user, edge cases, and core logic
 
-Then it hit me: why am I passing `user_id` in the URL when I already have it in the authenticated token? The design was fundamentally wrong. I refactored the entire API to use `/me` endpoints—`/me`, `/me/expenses/`, `/me/categories/`—where the user is *only* identified by their JWT token. No more URL parameters to exploit.
 
-This single architectural decision:
-- **Made cross-user exploits literally impossible**—there's no `user_id` parameter to manipulate
-- **Simplified dependencies drastically**—no more passing and verifying `user_id` everywhere
-- **Cut 10 redundant tests**—scenarios that could no longer exist didn't need testing
 
-This is the kind of architectural thinking AI can't do. It would've generated working code for `/users/{user_id}/` endpoints with all the validation logic, passing all its tests, never questioning whether the design itself was flawed. I learned that **architecture is security**—the best defense isn't rigorous testing, it's designing systems where entire vulnerability classes can't exist. Preventing bugs at the design level beats detecting them at the test level every single time.
+------
 
-### 6. Python Isn't Just Syntax
-I went in knowing Python basics but came out understanding `TypeVar` for generic functions, Pydantic validators with factory patterns, and FastAPI's dependency injection system. Reading the FastAPI and SQLModel docs deeply (not just skimming) made a huge difference. I learned that understanding *why* a framework makes certain design choices helps you use it properly.
+
+
+## 🏗️ Architecture Overview## 🏗️ Architecture Overview
+
+
+
+- **Routers**: Split by domain (users, categories, expenses, auth)- **Routers**: Split by domain (users, categories, expenses, auth)
+
+- **Service Layer**: Centralized business logic, avoids circular imports and keeps endpoints clean- **Service Layer**: Centralized business logic, avoids circular imports and keeps endpoints clean
+
+- **Dependency Injection**: Security, ownership validation, DB session management- **Dependency Injection**: Security, ownership validation, DB session management
+
+- **Models**: SQLModel schemas with validators, composite constraints, and foreign keys- **Models**: SQLModel schemas with validators, composite constraints, and foreign keys
+
+- **DB Layer**: Transaction helpers with structured exception mapping- **DB Layer**: Transaction helpers with structured exception mapping
+
+
+
+------
+
+
+
+## 🛠️ Tech Stack## 🛠️ Tech Stack
+
+
+
+- **FastAPI**- **FastAPI**
+
+- **SQLModel** (SQLAlchemy + Pydantic)- **SQLModel** (SQLAlchemy + Pydantic)
+
+- **SQLite** for dev- **SQLite** for dev
+
+- **JWT** for auth- **JWT** for auth
+
+- **Pytest** + pytest-asyncio- **Pytest** + pytest-asyncio
+
+
+
+------
+
+
+
+## 📦 Quick Start## 📦 Quick Start
+
+
+
+### 1️⃣ Clone and Setup### 1️⃣ Clone and Setup
+
+
+
+```bash```bash
+
+git clone https://github.com/vishalvemula1/expense-tracker.gitgit clone https://github.com/vishalvemula1/expense-tracker.git
+
+cd expense-trackercd expense-tracker
+
+python -m venv .venvpython -m venv .venv
+
+source .venv/bin/activate  # On Windows: .venv\Scripts\activatesource .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+pip install -r app/requirements.txtpip install -r app/requirements.txt
+
+``````
+
+
+
+### 2️⃣ Configure Environment### 2️⃣ Configure Environment
+
+
+
+Create a `.env` file in the root directory:Create a `.env` file in the root directory:
+
+
+
+```bash```bash
+
+SECRET_KEY=your_secret_key_hereSECRET_KEY=your_secret_key_here
+
+ALGORITHM=HS256ALGORITHM=HS256
+
+ACCESS_TOKEN_EXPIRE_MINUTES=30ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+``````
+
+
+
+### 3️⃣ Run and Test### 3️⃣ Run and Test
+
+
+
+```bash```bash
+
+# Start the server# Start the server
+
+uvicorn app.main:app --reloaduvicorn app.main:app --reload
+
+
+
+# Run tests# Run tests
+
+pytestpytest
+
+``````
+
+
+
+------
+
+
+
+## 📚 API Overview## 📚 API Overview
+
+
+
+### 🔐 Authentication### 🔐 Authentication
+
+- `POST /auth/signup`- `POST /auth/signup`
+
+- `POST /auth/login`- `POST /auth/login`
+
+
+
+### 👤 User### 👤 User
+
+- `GET /me`- `GET /me`
+
+- `PUT /me`- `PUT /me`
+
+- `DELETE /me`- `DELETE /me`
+
+
+
+### 📁 Categories### 📁 Categories
+
+- `POST /me/categories/`- `POST /me/categories/`
+
+- `GET /me/categories/`- `GET /me/categories/`
+
+- `GET /me/categories/{category_id}`- `GET /me/categories/{category_id}`
+
+- `PUT /me/categories/{category_id}`- `PUT /me/categories/{category_id}`
+
+- `DELETE /me/categories/{category_id}`- `DELETE /me/categories/{category_id}`
+
+- `GET /me/categories/{category_id}/expenses`- `GET /me/categories/{category_id}/expenses`
+
+
+
+### 💰 Expenses### 💰 Expenses
+
+- `POST /me/expenses/`- `POST /me/expenses/`
+
+- `GET /me/expenses/`- `GET /me/expenses/`
+
+- `GET /me/expenses/{expense_id}`- `GET /me/expenses/{expense_id}`
+
+- `PUT /me/expenses/{expense_id}`- `PUT /me/expenses/{expense_id}`
+
+- `DELETE /me/expenses/{expense_id}`- `DELETE /me/expenses/{expense_id}`
+
+
 
 ---
 
-## Project Structure
-```
+
+
+## 💡 Key Design Decisions## Key Design DecisionsKey Design Decisions
+
+
+
+### 1. Security Through Architecture: The `/me` Endpoint Design
+
+
+
+A concrete example: early on, the `/users/{id}/expenses` pattern required every endpoint to compare the `user_id` in the URL with the `sub` in the JWT. Even with careful checks, the design made it possible for a developer to forget one comparison or validate it inconsistently. It also forced tests to cover every permutation of mismatched IDs.### 1. Security Through Architecture: The /me Endpoint Design1. Security Through Architecture: The /me Endpoint Design
+
+
+
+Switching to `/me/expenses` removed the parameter entirely. No `user_id` in the URL means no chance of someone manipulating it, no forgotten comparisons, and no test cases for a state that can no longer exist. One architectural change erased a whole category of bugs.
+
+
+
+### 2. Intentional Abstractions for MaintainabilityA concrete example: early on, the `/users/{id}/expenses` pattern required every endpoint to compare the `user_id` in the URL with the `sub` in the JWT. Even with careful checks, the design made it possible for a developer to forget one comparison or validate it inconsistently. It also forced tests to cover every permutation of mismatched IDs.A concrete example: early on, the /users/{id}/expenses pattern required every endpoint to compare the user_id in the URL with the sub in the JWT. Even with careful checks, the design made it possible for a developer to forget one comparison or validate it inconsistently. It also forced tests to cover every permutation of mismatched IDs.
+
+
+
+Examples that justified their existence:
+
+
+
+- **Ownership via dependencies**: `VerifiedExpenseDep` and `VerifiedWriteCategoryDep` don't just "check a box"—they guarantee that every endpoint touching a resource verifies ownership or default-category rules automatically. There's no risk of one endpoint forgetting the logic.Switching to `/me/expenses` removed the parameter entirely. No `user_id` in the URL means no chance of someone manipulating it, no forgotten comparisons, and no test cases for a state that can no longer exist. One architectural change erased a whole category of bugs. Switching to /me/expenses removed the parameter entirely. No user_id in the URL means no chance of someone manipulating it, no forgotten comparisons, and no test cases for a state that can no longer exist. One architectural change erased a whole category of bugs.
+
+
+
+- **DRY validation via mixin factory**: A key abstraction was the `create_string_validators` factory. Instead of repeating `field_validator` logic for whitespace and empty-string checks, this factory generates a reusable mixin. This one mixin is inherited by all 6 Create and Update models, eliminating duplicated code and ensuring validation logic is defined in exactly one place.
+
+
+
+- **Transaction helper**: The `db_transaction` context manager trapped integrity errors (like duplicate category names per user via composite uniqueness) and routed them to consistent HTTP responses. Every write path behaved the same without repeating error-handling code.### 2. Intentional Abstractions for Maintainability2. Intentional Abstractions for Maintainability
+
+
+
+These weren't abstractions for neatness—they eliminated repetitive code and prevented subtle inconsistencies.
+
+
+
+### 3. Deliberate AI Use: Core Logic vs. Test BoilerplateExamples that justified their existence:Examples that justified their existence:
+
+
+
+For example, when relying on AI-generated tests early on, none of them explored cross-user scenarios. A test like "Can User A update an expense belonging to User B?" simply didn't exist. Writing that test manually exposed real authorization gaps that AI had no intuition to look for. This was eventually a problem that was phased out due to the `/me` refactor making these kind of cross-user attacks impossible by design but that wasn't always the case.
+
+
+
+This is why the core application logic in the [`app/`](app) directory was handwritten. While AI can scaffold a "working" endpoint, it struggles to weave in the project's specific architectural needs, like integrating the correct ownership dependency or the `db_transaction` helper for consistent error handling. These are the exact vulnerabilities that AI-generated application code would have likely introduced.- **Ownership via dependencies**: `VerifiedExpenseDep` and `VerifiedWriteCategoryDep` don't just "check a box"—they guarantee that every endpoint touching a resource verifies ownership or default-category rules automatically. There's no risk of one endpoint forgetting the logic.Ownership via dependencies: VerifiedExpenseDep and VerifiedWriteCategoryDep don’t just "check a box"—they guarantee that every endpoint touching a resource verifies ownership or default-category rules automatically. There's no risk of one endpoint forgetting the logic.
+
+
+
+AI was therefore intentionally limited to [`tests/`](tests), where it could accelerate boilerplate, but kept out of [`app/`](app), where its inability to grasp architectural intent would have compromised quality and security.
+
+
+
+---- **DRY validation via mixin factory**: A key abstraction was the `create_string_validators` factory. Instead of repeating `field_validator` logic for whitespace and empty-string checks, this factory generates a reusable mixin. This one mixin is inherited by all 6 Create and Update models, eliminating duplicated code and ensuring validation logic is defined in exactly one place.DRY validation via mixin factory: A key abstraction was the create_string_validators factory. Instead of repeating field_validator logic for whitespace and empty-string checks, this factory generates a reusable mixin. This one mixin is inherited by all 6 Create and Update models, eliminating duplicated code and ensuring validation logic is defined in exactly one place.
+
+
+
+## 📂 Project Structure
+
+
+
+```- **Transaction helper**: The `db_transaction` context manager trapped integrity errors (like duplicate category names per user via composite uniqueness) and routed them to consistent HTTP responses. Every write path behaved the same without repeating error-handling code.Transaction helper: The db_transaction context manager trapped integrity errors (like duplicate category names per user via composite uniqueness) and routed them to consistent HTTP responses. Every write path behaved the same without repeating error-handling code.
+
 expense_tracker/
+
 ├── app/
-│   ├── models/          # SQLModel schemas (User, Expense, Category)
-│   ├── routers/         # API endpoints by resource
-│   ├── auth.py          # JWT authentication logic
-│   ├── services.py      # Business logic layer
-│   ├── dependencies.py  # FastAPI dependency injection
-│   ├── exceptions.py    # Custom exception handlers
-│   └── main.py          # App entry point
-├── tests/               # 85+ tests covering security and edge cases
-└── database.db          # SQLite database
+
+│   ├── models/
+
+│   ├── routers/These weren't abstractions for neatness—they eliminated repetitive code and prevented subtle inconsistencies.These weren’t abstractions for neatness—they eliminated repetitive code and prevented subtle inconsistencies.
+
+│   ├── auth.py
+
+│   ├── service.py
+
+│   ├── dependencies.py
+
+│   ├── exceptions.py### 3. Deliberate AI Use: Core Logic vs. Test Boilerplate3. Deliberate AI Use: Core Logic vs. Test Boilerplate
+
+│   └── main.py
+
+├── tests/
+
+└── database.db
+
+```For example, when relying on AI-generated tests early on, none of them explored cross-user scenarios. A test like "Can User A update an expense belonging to User B?" simply didn't exist. Writing that test manually exposed real authorization gaps that AI had no intuition to look for. This was eventually a problem that was phased out due to the `/me` refactor making these kind of cross-user attacks impossible by design but that wasn't always the case.For example, when relying on AI-generated tests early on, none of them explored cross-user scenarios. A test like “Can User A update an expense belonging to User B?” simply didn’t exist. Writing that test manually exposed real authorization gaps that AI had no intuition to look for. This was eventually a problem that was phased out due to the /me refactor making these kind of cross-user attacks impossible by design but that wasn’t always the case.
+
+
+
+---
+
+
+
+## 🔮 Future ImprovementsThis is why the core application logic in the [`app`](app) directory was handwritten. While AI can scaffold a "working" endpoint, it struggles to weave in the project's specific architectural needs, like integrating the correct ownership dependency or the `db_transaction` helper for consistent error handling. These are the exact vulnerabilities that AI-generated application code would have likely introduced.This is why the core application logic in the app/ directory was handwritten. While AI can scaffold a "working" endpoint, it struggles to weave in the project's specific architectural needs, like integrating the correct ownership dependency or the db_transaction helper for consistent error handling. These are the exact vulnerabilities that AI-generated application code would have likely introduced.
+
+
+
+- Date-range filtering
+
+- PostgreSQL support
+
+- DockerizationAI was therefore intentionally limited to [`tests`](tests), where it could accelerate boilerplate, but kept out of [`app`](app), where its inability to grasp architectural intent would have compromised quality and security.AI was therefore intentionally limited to tests/, where it could accelerate boilerplate, but kept out of app/, where its inability to grasp architectural intent would have compromised quality and security.
+
+- Cloud deployment
+
+
+
+## Project StructureProject Structure
+
+
+
+```expense_tracker/
+
+expense_tracker/├── app/
+
+├── app/│   ├── models/
+
+│   ├── models/│   ├── routers/
+
+│   ├── routers/│   ├── auth.py
+
+│   ├── auth.py│   ├── service.py
+
+│   ├── service.py│   ├── dependencies.py
+
+│   ├── dependencies.py│   ├── exceptions.py
+
+│   ├── exceptions.py│   └── main.py
+
+│   └── main.py├── tests/
+
+├── tests/└── database.db
+
+└── database.db
+
 ```
 
+
+
 ## Future Improvements
-- Add expense filtering by date range and amount
-- Switch to PostgreSQL for production
-- Containerize the project with Docker
-- Deploy it on a cloud service like AWS 
+
+
+
+- Date-range filteringFuture Improvements
+
+- PostgreSQL support
+
+- DockerizationDate-range filtering
+
+- Cloud deployment
+
+PostgreSQL support
+
+Dockerization
+
+Cloud deployment

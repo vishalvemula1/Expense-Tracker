@@ -1,12 +1,12 @@
 fastapi==0.119.0
 uvicorn==0.37.0
-sqlmodel==0.0.14
+sqlmodel==0.0.27
 pydantic==2.12.2
 pydantic-settings==2.1.0
 python-dotenv==1.1.1
-PyJWT==2.8.1
+PyJWT==2.10.1
 python-multipart==0.0.20
 email-validator==2.3.0
-pwdlib==2.0.0
+pwdlib==0.3.0
 pytest==8.4.2
 pytest-asyncio==1.2.0
