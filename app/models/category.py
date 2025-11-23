@@ -2,7 +2,7 @@ from sqlmodel import SQLModel, Field
 from .validators import create_string_validators
 from enum import Enum
 from .expense import DateCheck
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, Index, text
 
 NoEmptyStringsMixinCategory = create_string_validators(name="trimmed", description="trimmed")
 
@@ -34,7 +34,19 @@ class CategoryRead(CategoryBase):
     is_default: bool
 
 class Category(CategoryBase, table=True):
-    __table_args__ = (UniqueConstraint('name', 'user_id', name='uq_category_name_user'),)
+    __table_args__ = (
+        # Unique category name per user
+        UniqueConstraint('name', 'user_id', name='uq_category_name_user'),
+        
+        # Partial unique index: only one default category per user (WHERE is_default = True)
+        Index(
+            'uq_one_default_per_user',
+            'user_id',
+            'is_default',
+            unique=True,
+            sqlite_where=text('is_default = 1')
+        ),
+    )
     user_id: int = Field(foreign_key="user.user_id", index=True, ondelete="CASCADE")
     category_id: int | None = Field(primary_key=True, default=None)
     date_of_entry: DateCheck

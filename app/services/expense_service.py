@@ -15,10 +15,10 @@ class ExpenseService:
         self.session = session
 
     def _get_expense(self, expense_id: int) -> Expense:
-        data = get_object_or_404(model=Expense, object_id=expense_id, session=self.session)
-        if data.user_id != self.user.user_id:
+        expense = get_object_or_404(model=Expense, object_id=expense_id, session=self.session)
+        if expense.user_id != self.user.user_id:
             raise AppExceptions.Unauthorized
-        return data
+        return expense
 
     def get(self, expense_id: int) -> Expense:
         return self._get_expense(expense_id)
