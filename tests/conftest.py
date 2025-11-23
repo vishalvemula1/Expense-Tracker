@@ -73,10 +73,11 @@ def test_category(test_db: Session, test_user: User):
     return category
 
 @pytest.fixture
-def test_new_category(test_db: Session, test_user: User):
+def test_custom_category(test_db: Session, test_user: User):
+    """A non-default category that can be edited/deleted"""
     assert test_user.user_id
     category = Category(
-        name="First Category",
+        name="Custom Category",
         user_id=test_user.user_id,
         date_of_entry=date.today(),
         tag="Blue" #type: ignore
@@ -87,7 +88,6 @@ def test_new_category(test_db: Session, test_user: User):
     test_db.refresh(category)
 
     return category
-
 
 @pytest.fixture
 def test_expense(test_db: Session, test_user: User, test_category: Category):

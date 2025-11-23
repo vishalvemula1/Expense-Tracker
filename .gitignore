@@ -13,14 +13,6 @@ venv/
 # Environment Variables
 .env
 .env.local
-# ==========================================
-# IDE & Development Tools
-# ==========================================
-.vscode/
-.copilot/
 
-# Project-Specific & Data
+# Project-Specific Data
 database.db
-
-# Documentation & Guides
-.claude/
