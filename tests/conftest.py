@@ -116,6 +116,18 @@ def test_expense(test_db: Session, test_user: User, test_category: Category):
 
     return expense
 
+@pytest.fixture
+def other_user(test_db: Session):
+    """Secondary user for ownership violation tests"""
+    user_create = UserCreate(
+        username="otheruser",
+        email="other@example.com",
+        salary=50000,
+        password="password123"
+    )
+    auth_service = AuthService(test_db)
+    return auth_service.create_user_with_defaults(user_create)
+
 # ====================================================================
 # Multi-User Test Data Fixtures
 # ====================================================================
@@ -251,17 +263,25 @@ def multi_user_data(test_db: Session) -> MultiUserData:
     )
 
 @pytest.fixture
-def user1_client(client: TestClient, multi_user_data: MultiUserData):
+def user1_client(test_db: Session, multi_user_data: MultiUserData):
     """Authenticated client for user1"""
     assert multi_user_data.user1.user_id
     token = create_token(multi_user_data.user1.user_id)
+    
+    app.dependency_overrides[get_session] = lambda: test_db
+    client = TestClient(app)
     client.headers = {"Authorization": f"Bearer {token}"}
-    return client
+    yield client
+    app.dependency_overrides.clear()
 
 @pytest.fixture
-def user2_client(client: TestClient, multi_user_data: MultiUserData):
+def user2_client(test_db: Session, multi_user_data: MultiUserData):
     """Authenticated client for user2"""
     assert multi_user_data.user2.user_id
     token = create_token(multi_user_data.user2.user_id)
+    
+    app.dependency_overrides[get_session] = lambda: test_db
+    client = TestClient(app)
     client.headers = {"Authorization": f"Bearer {token}"}
-    return client
+    yield client
+    app.dependency_overrides.clear()
