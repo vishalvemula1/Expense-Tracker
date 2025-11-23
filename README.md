@@ -10,7 +10,7 @@ This is a small but intentionally designed service that handles real multi-user 
 * /me endpoint design removes user-parameter edge cases entirely
 * Clear domain rules: composite uniqueness, default-category protection, and proper schema constraints
 * Transaction-scoped DB operations with structured integrity handling
-* Comprehensive test suite covering security paths and edge cases
+* Comprehensive test suite (113 tests) implementing proper test pyramid architecture
 
 ## **Features**
 
@@ -18,7 +18,7 @@ This is a small but intentionally designed service that handles real multi-user 
 * **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design
 * **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
 * **Full CRUD for Expenses & Categories**—With proper validation and ownership checks
-* **85+ Tests**—Security-focused, cross-user, edge cases, and core logic
+* **113 Tests**—70 unit tests + 43 integration tests covering security, edge cases, and end-to-end flows
 
 ## **Architecture Overview**
 
@@ -110,6 +110,7 @@ Moving business logic into service classes (AuthService, UserService, ExpenseSer
 
 These weren't abstractions for neatness—they eliminated repetitive code and prevented subtle inconsistencies.
 
+
 ### **3. Deliberate AI Use: Core Logic vs. Test Boilerplate**
 
 For example, when relying on AI-generated tests early on, none of them explored cross-user scenarios. A test like "Can User A update an expense belonging to User B?" simply didn't exist. Writing that test manually exposed real authorization gaps that AI had no intuition to look for. This was eventually a problem that was phased out due to the /me refactor making these kind of cross-user attacks impossible by design but that wasn't always the case.
@@ -123,20 +124,43 @@ AI was therefore intentionally limited to tests/, where it could accelerate boil
 ```
 expense_tracker/
 ├── app/
-│   ├── models/
-│   ├── routers/
-│   ├── services/
-│   ├── auth.py
-│   ├── dependencies.py
-│   ├── exceptions.py
-│   └── main.py
+│   ├── models/          # SQLModel schemas with validation
+│   ├── routers/         # FastAPI route handlers
+│   ├── services/        # Business logic layer
+│   ├── auth.py          # JWT authentication
+│   ├── dependencies.py  # Dependency injection
+│   ├── exceptions.py    # Error handling
+│   └── main.py          # App entry point
 ├── tests/
+│   ├── unit/            # Service layer tests (70)
+│   ├── integration/     # End-to-end tests (43)
+│   └── conftest.py      # Shared fixtures
 └── database.db
+```
+
+## **Running Tests**
+
+```bash
+# Run all tests
+pytest
+
+# Run only unit tests
+pytest tests/unit/
+
+# Run only integration tests
+pytest tests/integration/
+
+# Run with coverage
+pytest --cov=app --cov-report=html
+
+# Run specific test class
+pytest tests/unit/test_service_expenses.py::TestCreate -v
 ```
 
 ## **Future Improvements**
 
 * Date-range filtering
-* PostgreSQL support
+* PostgreSQL support (async engine with asyncpg)
+* True async/await throughout the stack
 * Dockerization
 * Cloud deployment
