@@ -8,200 +8,187 @@ import jwt
 from app.security import SECRET_KEY, ALGORITHM
 
 
-# ====================================================================
-# create_user_with_defaults: Happy Path
-# ====================================================================
+class TestCreateUserWithDefaults:
+    """Tests for AuthService.create_user_with_defaults()"""
 
-def test_create_user_success(test_db: Session):
-    auth_service = AuthService(test_db)
-    user_create = UserCreate(
-        username="newuser",
-        email="new@example.com",
-        salary=50000,
-        password="securepass123"
-    )
-
-    user = auth_service.create_user_with_defaults(user_create)
-
-    # Verify user was created correctly
-    assert user.user_id is not None
-    assert user.username == "newuser"
-    assert user.email == "new@example.com"
-    assert user.salary == 50000
-    assert user.password_hash is not None
-    assert user.password_hash != "securepass123"  # Password is hashed
-
-    # Verify default category was created
-    default_category = test_db.exec(
-        select(Category).where(
-            Category.user_id == user.user_id,
-            Category.is_default == True
+    def test_create_user_success(self, test_db: Session):
+        """Happy path: Creating a user with default category"""
+        auth_service = AuthService(test_db)
+        user_create = UserCreate(
+            username="newuser",
+            email="new@example.com",
+            salary=50000,
+            password="securepass123"
         )
-    ).first()
 
-    assert default_category is not None
-    assert default_category.name == "Uncategorized"
-    assert default_category.is_default == True
+        user = auth_service.create_user_with_defaults(user_create)
+
+        # Verify user was created correctly
+        assert user.user_id is not None
+        assert user.username == "newuser"
+        assert user.email == "new@example.com"
+        assert user.salary == 50000
+        assert user.password_hash is not None
+        assert user.password_hash != "securepass123"  # Password is hashed
+
+        # Verify default category was created
+        default_category = test_db.exec(
+            select(Category).where(
+                Category.user_id == user.user_id,
+                Category.is_default == True
+            )
+        ).first()
+
+        assert default_category is not None
+        assert default_category.name == "Uncategorized"
+        assert default_category.is_default == True
+
+    def test_create_user_duplicate_username(self, test_db: Session, test_user: User):
+        """409 Conflict: Cannot create user with duplicate username"""
+        auth_service = AuthService(test_db)
+        user_create = UserCreate(
+            username="testuser",  # Same as test_user
+            email="different@example.com",
+            salary=50000,
+            password="securepass123"
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.create_user_with_defaults(user_create)
+
+        assert exc_info.value.status_code == 409
+        assert "Username already exists" in exc_info.value.detail
+
+    def test_create_user_duplicate_email(self, test_db: Session, test_user: User):
+        """409 Conflict: Cannot create user with duplicate email"""
+        auth_service = AuthService(test_db)
+        user_create = UserCreate(
+            username="differentuser",
+            email="test@example.com",  # Same as test_user
+            salary=50000,
+            password="securepass123"
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.create_user_with_defaults(user_create)
+
+        assert exc_info.value.status_code == 409
+        assert "Email already exists" in exc_info.value.detail
+
+    def test_create_user_empty_username(self, test_db: Session):
+        """Validation: Empty username is rejected"""
+        with pytest.raises(ValueError):
+            UserCreate(
+                username="",
+                email="new@example.com",
+                salary=50000,
+                password="securepass123"
+            )
+
+    def test_create_user_whitespace_username(self, test_db: Session):
+        """Validation: Whitespace-only username is rejected"""
+        with pytest.raises(ValueError):
+            UserCreate(
+                username="   ",
+                email="new@example.com",
+                salary=50000,
+                password="securepass123"
+            )
+
+    def test_create_user_empty_password(self, test_db: Session):
+        """Validation: Empty password is rejected"""
+        with pytest.raises(ValueError):
+            UserCreate(
+                username="newuser",
+                email="new@example.com",
+                salary=50000,
+                password=""
+            )
+
+    def test_create_user_whitespace_password(self, test_db: Session):
+        """Validation: Whitespace-only password is rejected"""
+        with pytest.raises(ValueError):
+            UserCreate(
+                username="newuser",
+                email="new@example.com",
+                salary=50000,
+                password="   "
+            )
 
 
-# ====================================================================
-# create_user_with_defaults: Duplicate Errors (409)
-# ====================================================================
+class TestLogin:
+    """Tests for AuthService.login()"""
 
-def test_create_user_duplicate_username(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    user_create = UserCreate(
-        username="testuser",  # Same as test_user
-        email="different@example.com",
-        salary=50000,
-        password="securepass123"
-    )
+    def test_login_success(self, test_db: Session, test_user: User):
+        """Happy path: Login with correct credentials returns JWT token"""
+        auth_service = AuthService(test_db)
+        form_data = OAuth2PasswordRequestForm(
+            username="testuser",
+            password="testpassword",
+            scope=""
+        )
 
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.create_user_with_defaults(user_create)
+        token = auth_service.login(form_data)
 
-    assert exc_info.value.status_code == 409
-    assert "Username already exists" in exc_info.value.detail
+        decoded = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        assert decoded["sub"] == str(test_user.user_id)
+        assert token.access_token is not None
+        assert token.token_type == "bearer"
 
+    def test_login_wrong_password(self, test_db: Session, test_user: User):
+        """401 Unauthorized: Login with wrong password fails"""
+        auth_service = AuthService(test_db)
+        form_data = OAuth2PasswordRequestForm(
+            username="testuser",
+            password="wrongpassword",
+            scope=""
+        )
 
-def test_create_user_duplicate_email(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    user_create = UserCreate(
-        username="differentuser",
-        email="test@example.com",  # Same as test_user
-        salary=50000,
-        password="securepass123"
-    )
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.login(form_data)
 
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.create_user_with_defaults(user_create)
+        assert exc_info.value.status_code == 401
+        assert "Invalid username or password" in exc_info.value.detail
 
-    assert exc_info.value.status_code == 409
-    assert "Email already exists" in exc_info.value.detail
+    def test_login_nonexistent_user(self, test_db: Session):
+        """401 Unauthorized: Login with non-existent user fails"""
+        auth_service = AuthService(test_db)
+        form_data = OAuth2PasswordRequestForm(
+            username="nonexistent",
+            password="somepassword",
+            scope=""
+        )
 
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.login(form_data)
 
-# ====================================================================
-# create_user_with_defaults: Validation Errors (422)
-# These are caught by Pydantic before reaching the service
-# ====================================================================
+        assert exc_info.value.status_code == 401
+        assert "Invalid username or password" in exc_info.value.detail
 
-def test_create_user_empty_username(test_db: Session):
-    with pytest.raises(ValueError):
-        UserCreate(
+    def test_login_empty_username(self, test_db: Session, test_user: User):
+        """401 Unauthorized: Login with empty username fails"""
+        auth_service = AuthService(test_db)
+        form_data = OAuth2PasswordRequestForm(
             username="",
-            email="new@example.com",
-            salary=50000,
-            password="securepass123"
+            password="testpassword",
+            scope=""
         )
 
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.login(form_data)
 
-def test_create_user_whitespace_username(test_db: Session):
-    with pytest.raises(ValueError):
-        UserCreate(
-            username="   ",
-            email="new@example.com",
-            salary=50000,
-            password="securepass123"
+        assert exc_info.value.status_code == 401
+
+    def test_login_empty_password(self, test_db: Session, test_user: User):
+        """401 Unauthorized: Login with empty password fails"""
+        auth_service = AuthService(test_db)
+        form_data = OAuth2PasswordRequestForm(
+            username="testuser",
+            password="",
+            scope=""
         )
 
+        with pytest.raises(HTTPException) as exc_info:
+            auth_service.login(form_data)
 
-def test_create_user_empty_password(test_db: Session):
-    with pytest.raises(ValueError):
-        UserCreate(
-            username="newuser",
-            email="new@example.com",
-            salary=50000,
-            password=""
-        )
-
-
-def test_create_user_whitespace_password(test_db: Session):
-    with pytest.raises(ValueError):
-        UserCreate(
-            username="newuser",
-            email="new@example.com",
-            salary=50000,
-            password="   "
-        )
-
-
-
-# ====================================================================
-# login: Happy Path
-# ====================================================================
-
-def test_login_success(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    form_data = OAuth2PasswordRequestForm(
-        username="testuser",
-        password="testpassword",
-        scope=""
-    )
-
-    token = auth_service.login(form_data)
-
-    decoded = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    assert decoded["sub"] == str(test_user.user_id)
-    assert token.access_token is not None
-    assert token.token_type == "bearer"
-
-# ====================================================================
-# login: Authentication Errors (401)
-# ====================================================================
-
-def test_login_wrong_password(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    form_data = OAuth2PasswordRequestForm(
-        username="testuser",
-        password="wrongpassword",
-        scope=""
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.login(form_data)
-
-    assert exc_info.value.status_code == 401
-    assert "Invalid username or password" in exc_info.value.detail
-
-
-def test_login_nonexistent_user(test_db: Session):
-    auth_service = AuthService(test_db)
-    form_data = OAuth2PasswordRequestForm(
-        username="nonexistent",
-        password="somepassword",
-        scope=""
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.login(form_data)
-
-    assert exc_info.value.status_code == 401
-    assert "Invalid username or password" in exc_info.value.detail
-
-
-def test_login_empty_username(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    form_data = OAuth2PasswordRequestForm(
-        username="",
-        password="testpassword",
-        scope=""
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.login(form_data)
-
-    assert exc_info.value.status_code == 401
-
-
-def test_login_empty_password(test_db: Session, test_user: User):
-    auth_service = AuthService(test_db)
-    form_data = OAuth2PasswordRequestForm(
-        username="testuser",
-        password="",
-        scope=""
-    )
-
-    with pytest.raises(HTTPException) as exc_info:
-        auth_service.login(form_data)
-
-    assert exc_info.value.status_code == 401
+        assert exc_info.value.status_code == 401
