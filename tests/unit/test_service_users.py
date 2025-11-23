@@ -24,6 +24,21 @@ def test_get_user_not_found(test_db: Session):
 
 
 # ====================================================================
+# get: Returns current authenticated user
+# ====================================================================
+
+def test_get_current_user_success(test_db: Session, test_user: User):
+    """get() should return the authenticated user"""
+    service = UserService(test_user, test_db)
+
+    user = service.get()
+
+    assert user.user_id == test_user.user_id
+    assert user.username == test_user.username
+    assert user.email == test_user.email
+
+
+# ====================================================================
 # update: Partial updates and password hashing
 # ====================================================================
 
@@ -125,3 +140,45 @@ def test_delete_user_success(test_db: Session, test_user: User):
         UserService.get_user(user_id, test_db)  # type: ignore
 
     assert exc_info.value.status_code == 404
+
+
+def test_delete_user_cascades_to_categories_and_expenses(test_db: Session, test_user: User):
+    """Deleting a user should cascade delete their categories and expenses"""
+    from app.services.category_service import CategoryService
+    from app.services.expense_service import ExpenseService
+    from app.models import CategoryCreate, ExpenseCreate
+    from sqlmodel import select
+    from app.models import Category, Expense
+    
+    # Create a custom category
+    cat_service = CategoryService(test_user, test_db)
+    category = cat_service.create(CategoryCreate(name="Test Cat", tag="Blue"))
+    category_id = category.category_id
+    
+    # Create an expense
+    exp_service = ExpenseService(test_user, test_db)
+    expense = exp_service.create(ExpenseCreate(
+        name="Test Expense",
+        amount=50.0,
+        category_id=category_id
+    ))
+    expense_id = expense.expense_id
+    
+    user_id = test_user.user_id
+    
+    # Delete the user
+    service = UserService(test_user, test_db)
+    service.delete()
+    
+    # Verify user is gone
+    with pytest.raises(HTTPException) as exc_info:
+        UserService.get_user(user_id, test_db)  # type: ignore
+    assert exc_info.value.status_code == 404
+    
+    # Verify categories are cascade deleted
+    categories = test_db.exec(select(Category).where(Category.user_id == user_id)).all()
+    assert len(categories) == 0
+    
+    # Verify expenses are cascade deleted
+    expenses = test_db.exec(select(Expense).where(Expense.user_id == user_id)).all()
+    assert len(expenses) == 0

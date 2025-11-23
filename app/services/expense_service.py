@@ -26,7 +26,7 @@ class ExpenseService:
     def create(self, new_expense: ExpenseCreate) -> Expense:
         with db_transaction(self.session, context="Expense Creation") as db:
             category_service = CategoryService(self.user, db)
-            category = category_service._get_read_category(new_expense.category_id)
+            category = category_service._get_category(new_expense.category_id)
 
             expense_data = Expense.model_validate(new_expense, update={"user_id": self.user.user_id, "category_id": category.category_id})
 
@@ -60,7 +60,7 @@ class ExpenseService:
 
         with db_transaction(self.session, context="Expense Update") as db:
             category_service = CategoryService(self.user, db)
-            category = category_service._get_read_category(update_request.category_id)
+            category = category_service._get_category(update_request.category_id)
 
             update_data = update_request.model_dump(exclude_unset=True)
             update_data.update({"category_id": category.category_id})

@@ -168,6 +168,43 @@ def test_update_category_wrong_owner(test_db: Session, test_user: User, test_cus
     assert exc_info.value.status_code == 403
 
 
+def test_update_category_partial_name_only(test_db: Session, test_user: User, test_custom_category: Category):
+    """Partial update: only update name, other fields unchanged"""
+    service = CategoryService(test_user, test_db)
+    original_tag = test_custom_category.tag
+
+    update_data = CategoryUpdate(name="Partially Updated")
+
+    updated = service.update(test_custom_category.category_id, update_data)  # type: ignore
+
+    assert updated.name == "Partially Updated"
+    assert updated.tag == original_tag
+
+
+def test_update_category_partial_tag_only(test_db: Session, test_user: User, test_custom_category: Category):
+    """Partial update: only update tag, other fields unchanged"""
+    service = CategoryService(test_user, test_db)
+    original_name = test_custom_category.name
+
+    update_data = CategoryUpdate(tag="Black")
+
+    updated = service.update(test_custom_category.category_id, update_data)  # type: ignore
+
+    assert updated.tag == "Black"
+    assert updated.name == original_name
+
+
+def test_update_category_not_found(test_db: Session, test_user: User):
+    """Cannot update non-existent category"""
+    service = CategoryService(test_user, test_db)
+    update_data = CategoryUpdate(name="Ghost")
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.update(99999, update_data)
+
+    assert exc_info.value.status_code == 404
+
+
 # ====================================================================
 # delete: Deletes category with default protection
 # ====================================================================
@@ -211,6 +248,41 @@ def test_delete_category_wrong_owner(test_db: Session, test_user: User, test_cus
         service.delete(test_custom_category.category_id)  # type: ignore
 
     assert exc_info.value.status_code == 403
+
+
+def test_delete_category_not_found(test_db: Session, test_user: User):
+    """Cannot delete non-existent category"""
+    service = CategoryService(test_user, test_db)
+
+    with pytest.raises(HTTPException) as exc_info:
+        service.delete(99999)
+
+    assert exc_info.value.status_code == 404
+
+
+def test_delete_category_cascades_to_expenses(test_db: Session, test_user: User, test_custom_category: Category):
+    """Deleting a category should cascade delete its expenses"""
+    from app.services.expense_service import ExpenseService
+    from app.models import ExpenseCreate
+    
+    # Create an expense in the custom category
+    expense_service = ExpenseService(test_user, test_db)
+    expense = expense_service.create(ExpenseCreate(
+        name="Test Expense",
+        amount=100.0,
+        category_id=test_custom_category.category_id
+    ))
+    expense_id = expense.expense_id
+    
+    # Delete the category
+    category_service = CategoryService(test_user, test_db)
+    category_service.delete(test_custom_category.category_id)  # type: ignore
+    
+    # Verify expense was cascade deleted
+    with pytest.raises(HTTPException) as exc_info:
+        expense_service.get(expense_id)  # type: ignore
+    
+    assert exc_info.value.status_code == 404
 
 
 # ====================================================================
