@@ -19,10 +19,7 @@ venv/
 .vscode/
 .copilot/
 
-# ==========================================
-# Project-Specific Archives & Data
-# ==========================================
-_archive/
+# Project-Specific & Data
 database.db
 
 # Documentation & Guides

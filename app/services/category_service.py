@@ -14,25 +14,18 @@ class CategoryService:
         self.user = user
         self.session = session
 
-    def _get_read_category(self, category_id: int | None) -> Category:
+    def _get_category(self, category_id: int | None) -> Category:
         if category_id is None:
             category = self.session.exec(select(Category).where(Category.user_id == self.user.user_id, Category.is_default == True)).first()
             if category is None:
                 raise HTTPException(status_code=404, detail="Default category not found")
             return category
 
-        data = get_object_or_404(model=Category, object_id=category_id, session=self.session)
-        if data.user_id != self.user.user_id:
+        category = get_object_or_404(model=Category, object_id=category_id, session=self.session)
+        if category.user_id != self.user.user_id:
             raise AppExceptions.Unauthorized
-        return data
-
-    def _get_write_category(self, category_id: int) -> Category:
-        category = self._get_read_category(category_id)
-
-        if category.is_default:
-            raise AppExceptions.DefaultCategoryUneditable
-
         return category
+
 
     def create(self, new_category: CategoryCreate) -> Category:
         with db_transaction(self.session, context="Category Creation") as db:
@@ -46,10 +39,10 @@ class CategoryService:
         return category_data
 
     def get(self, category_id: int) -> Category:
-        return self._get_read_category(category_id)
+        return self._get_category(category_id)
 
     def update(self, category_id: int, update_request: CategoryUpdate) -> Category:
-        category = self._get_write_category(category_id)
+        category = self._get_category(category_id)
 
         with db_transaction(self.session, context="Category Update") as db:
             update_data = update_request.model_dump(exclude_unset=True)
@@ -64,7 +57,7 @@ class CategoryService:
         return category        
     
     def delete(self, category_id: int) -> None:
-        category = self._get_write_category(category_id)
+        category = self._get_category(category_id)
 
         self.session.delete(category)
         self.session.commit()
@@ -80,7 +73,7 @@ class CategoryService:
         return list(data)
 
     def get_expenses(self, category_id: int) -> list[Expense]: #type: ignore
-        category = self._get_read_category(category_id)
+        category = self._get_category(category_id)
 
         statement = (select(Expense).where(Expense.category_id == category.category_id))
 

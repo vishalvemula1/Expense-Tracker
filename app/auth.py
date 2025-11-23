@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
-from sqlmodel import select
+from sqlmodel import select, Session
 from fastapi import Depends
 
 import jwt
@@ -11,7 +11,7 @@ from .database import SessionDep
 from .models import User
 from .security import verify_password, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, oauth2_scheme
 
-def authenticate_user(username: str, password: str, session: SessionDep) -> User:
+def authenticate_user(username: str, password: str, session: Session) -> User:
      
     statement = select(User).where(User.username == username)
     user = session.exec(statement).first()

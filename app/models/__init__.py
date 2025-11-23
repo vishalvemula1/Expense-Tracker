@@ -7,5 +7,7 @@ __all__ = [
     "UserBase", "UserCreate", "UserRead", "User", "UserUpdate",
     "ExpenseBase", "ExpenseCreate", "ExpenseUpdate", "Expense", "ExpenseRead",
     "Token", "Category", "CategoryBase", "CategoryCreate", "CategoryUpdate", "CategoryRead",
-    
 ]
+
+# Import events to register listeners
+from . import events

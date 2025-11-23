@@ -16,29 +16,6 @@ class AuthService:
     def create_user_with_defaults(self, user: UserCreate) -> User:
         with db_transaction(self.session, context="User Signup") as db:
             hashed_password = get_password_hash(user.password)
-            user_data_dict = user.model_dump(exclude={"password"})
-            new_user = User.model_validate(user_data_dict, update={"password_hash": hashed_password})
-
-            db.add(new_user)
-            db.flush()
-
-            # Creating a default category for every new user called "Uncategorized"
-            default_category = Category(name = defaults.DEFAULT_CATEGORY_NAME,
-                                        user_id = new_user.user_id, # type: ignore
-                                        description = defaults.DEFAULT_CATEGORY_DESCRIPTION,
-                                        tag = defaults.DEFAULT_CATEGORY_TAG, # type: ignore
-                                        date_of_entry = date.today(),
-                                        is_default = True)
-            
-            db.add(default_category)
-            db.commit()
-
-            db.refresh(new_user)
-
-        return new_user
-
-    def login(self, form_data: OAuth2PasswordRequestForm) -> Token:
-        
         user = authenticate_user(form_data.username, form_data.password, self.session)
 
         token = create_token(user.user_id) #type: ignore
