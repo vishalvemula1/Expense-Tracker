@@ -108,7 +108,7 @@ def test_expense(test_db: Session, test_user: User, test_category: Category):
         category_id=test_category.category_id,
         date_of_entry=date.today(),
         user_id=test_user.user_id
-    )
+    ) # type: ignore
 
     test_db.add(expense)
     test_db.commit()

@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from fastapi import HTTPException
 from app.services.user_service import UserService
 from app.models import User, UserUpdate, Category, Expense
-
+from app.models.category import Color
 
 class TestGetUser:
     """Tests for UserService.get_user() static method"""
@@ -123,17 +123,16 @@ class TestDelete:
         
         # Create a custom category
         cat_service = CategoryService(test_user, test_db)
-        category = cat_service.create(CategoryCreate(name="Test Cat", tag="Blue"))
+        category = cat_service.create(CategoryCreate(name="Test Cat", tag=Color.Blue))
         category_id = category.category_id
         
         # Create an expense
         exp_service = ExpenseService(test_user, test_db)
-        expense = exp_service.create(ExpenseCreate(
+        exp_service.create(ExpenseCreate(
             name="Test Expense",
             amount=50.0,
             category_id=category_id
         ))
-        expense_id = expense.expense_id
         
         user_id = test_user.user_id
         

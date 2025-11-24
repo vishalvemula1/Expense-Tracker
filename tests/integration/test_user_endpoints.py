@@ -6,9 +6,8 @@ These tests verify:
 - User profile updates
 - User deletion with cascading effects
 """
-import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
+from sqlmodel import Session
 from app.models import User, Category, Expense
 
 

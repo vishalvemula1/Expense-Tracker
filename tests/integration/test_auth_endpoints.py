@@ -6,7 +6,6 @@ These tests verify the full stack authentication flow:
 - Login flow with JWT token generation
 - Token usage for accessing protected endpoints
 """
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 from app.models import User

@@ -16,7 +16,7 @@ class CategoryService:
 
     def _get_category(self, category_id: int | None) -> Category:
         if category_id is None:
-            category = self.session.exec(select(Category).where(Category.user_id == self.user.user_id, Category.is_default == True)).first()
+            category = self.session.exec(select(Category).where(Category.user_id == self.user.user_id, Category.is_default)).first()
             if category is None:
                 raise HTTPException(status_code=404, detail="Default category not found")
             return category

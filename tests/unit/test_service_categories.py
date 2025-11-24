@@ -2,9 +2,8 @@ import pytest
 from sqlmodel import Session
 from fastapi import HTTPException
 from app.services.category_service import CategoryService
-from app.services.auth_service import AuthService
-from app.models import User, Category, CategoryCreate, CategoryUpdate, UserCreate, Expense
-
+from app.models import User, Category, CategoryCreate, CategoryUpdate, Expense
+from app.models.category import Color
 
 class TestCreate:
     """Tests for CategoryService.create()"""
@@ -15,7 +14,7 @@ class TestCreate:
         category_data = CategoryCreate(
             name="Food",
             description="Food expenses",
-            tag="Blue"
+            tag=Color.Blue
         )
 
         category = service.create(category_data)
@@ -23,14 +22,14 @@ class TestCreate:
         assert category.category_id is not None
         assert category.name == "Food"
         assert category.user_id == test_user.user_id
-        assert category.is_default == False
+        assert not category.is_default
 
     def test_create_category_duplicate_name(self, test_db: Session, test_user: User):
         """409 Conflict: Category names must be unique per user"""
         service = CategoryService(test_user, test_db)
         category_data = CategoryCreate(
             name="Food",
-            tag="Blue"
+            tag=Color.Blue
         )
 
         service.create(category_data)
@@ -45,11 +44,11 @@ class TestCreate:
         """Different users can have categories with the same name"""
         # Create category for test_user
         service1 = CategoryService(test_user, test_db)
-        service1.create(CategoryCreate(name="Food", tag="Blue"))
+        service1.create(CategoryCreate(name="Food", tag=Color.Blue))
 
         # Other user can also have "Food" category
         service2 = CategoryService(other_user, test_db)
-        category = service2.create(CategoryCreate(name="Food", tag="Red"))
+        category = service2.create(CategoryCreate(name="Food", tag=Color.Red))
 
         assert category.name == "Food"
         assert category.user_id == other_user.user_id
@@ -92,12 +91,12 @@ class TestUpdate:
     def test_update_category_success(self, test_db: Session, test_user: User, test_custom_category: Category):
         """Happy path: Update category fields"""
         service = CategoryService(test_user, test_db)
-        update_data = CategoryUpdate(name="Updated Name", tag="Red")
+        update_data = CategoryUpdate(name="Updated Name", tag=Color.Red)
 
         updated = service.update(test_custom_category.category_id, update_data)  # type: ignore
 
         assert updated.name == "Updated Name"
-        assert updated.tag == "Red"
+        assert updated.tag == Color.Red
 
     def test_update_default_category_conflict(self, test_db: Session, test_user: User, test_category: Category):
         """409 Conflict: Cannot update the default category"""
@@ -114,7 +113,7 @@ class TestUpdate:
         service = CategoryService(test_user, test_db)
 
         # Create another category
-        other_cat = service.create(CategoryCreate(name="Other", tag="White"))
+        service.create(CategoryCreate(name="Other", tag=Color.White))
 
         # Try to rename test_custom_category to "Other"
         update_data = CategoryUpdate(name="Other")
@@ -233,12 +232,12 @@ class TestList:
         service = CategoryService(test_user, test_db)
 
         # Create some categories
-        service.create(CategoryCreate(name="Food", tag="Blue"))
-        service.create(CategoryCreate(name="Travel", tag="Red"))
+        service.create(CategoryCreate(name="Food", tag=Color.Blue))
+        service.create(CategoryCreate(name="Travel", tag=Color.Red))
 
         # Other user creates a category
         other_service = CategoryService(other_user, test_db)
-        other_service.create(CategoryCreate(name="Other's Cat", tag="Black"))
+        other_service.create(CategoryCreate(name="Other's Cat", tag=Color.Black))
 
         # List test_user's categories
         categories = service.list(limit=100, offset=0)
@@ -253,7 +252,7 @@ class TestList:
 
         # Create 5 categories
         for i in range(5):
-            service.create(CategoryCreate(name=f"Cat{i}", tag="Blue"))
+            service.create(CategoryCreate(name=f"Cat{i}", tag=Color.Blue))
 
         # Total: 1 default + 5 = 6
         page1 = service.list(limit=3, offset=0)

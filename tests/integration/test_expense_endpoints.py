@@ -7,7 +7,6 @@ These tests verify:
 - Multi-user data isolation
 - Category-expense relationship handling
 """
-import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 from app.models import Expense, Category
@@ -136,7 +135,7 @@ class TestExpenseListing:
         extra_expense = Expense(
             name="Extra",
             amount=20.0,
-            category_id=test_category.category_id,
+            category_id=test_category.category_id, #type: ignore
             user_id=test_user.user_id,
             date_of_entry=date.today()
         )
@@ -163,7 +162,7 @@ class TestExpenseListing:
         extra_expense = Expense(
             name="Extra",
             amount=20.0,
-            category_id=test_category.category_id,
+            category_id=test_category.category_id, #type: ignore
             user_id=test_user.user_id,
             date_of_entry=date.today()
         )
@@ -355,7 +354,7 @@ class TestExpenseCategoryRelationship:
         expense = Expense(
             name="Test",
             amount=50.0,
-            category_id=test_custom_category.category_id,
+            category_id=test_custom_category.category_id, #type: ignore
             user_id=test_user.user_id,
             date_of_entry=date.today()
         )

@@ -1,10 +1,8 @@
 from sqlmodel import SQLModel, Field
-from .validators import create_string_validators
+from .validators import DateCheck, LongText, SmallText, create_string_validators
 from enum import Enum
-from .expense import DateCheck
 from sqlalchemy import UniqueConstraint, Index, text
 
-NoEmptyStringsMixinCategory = create_string_validators(name="trimmed", description="trimmed")
 
 class Color(str, Enum):
     Blue = "Blue"
@@ -12,19 +10,20 @@ class Color(str, Enum):
     Black = "Black"
     White = "White"
 
+CategoryWhitespaceTrimmerMixin = create_string_validators("name", "description")
 
 class CategoryBase(SQLModel):
-    name: str
-    description: str | None = None
+    name: SmallText
+    description: LongText | None = None
     tag: Color | None = None
 
 
-class CategoryCreate(CategoryBase, NoEmptyStringsMixinCategory):
+class CategoryCreate(CategoryBase, CategoryWhitespaceTrimmerMixin):
     pass
 
-class CategoryUpdate(CategoryBase, NoEmptyStringsMixinCategory):
-    name: str | None = None
-    description: str | None = None
+class CategoryUpdate(CategoryBase, CategoryWhitespaceTrimmerMixin):
+    name: SmallText | None = None
+    description: LongText | None = None
     tag: Color | None = None
 
 

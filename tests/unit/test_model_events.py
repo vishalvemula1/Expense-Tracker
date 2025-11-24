@@ -2,10 +2,8 @@ import pytest
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
-from app.models import User, UserCreate, Category, CategoryUpdate
-from app.services.auth_service import AuthService
+from app.models import User, Category, CategoryUpdate
 from app.services.category_service import CategoryService
-from app.exceptions import AppExceptions
 from datetime import date
 
 
@@ -27,7 +25,7 @@ class TestDefaultCategoryCreation:
         # Check for default category
         statement = select(Category).where(
             Category.user_id == user.user_id,
-            Category.is_default == True
+            Category.is_default
         )
         category = test_db.exec(statement).first()
 
@@ -44,7 +42,7 @@ class TestDefaultCategoryProtection:
         """409 Conflict: Cannot update default category"""
         statement = select(Category).where(
             Category.user_id == test_user.user_id,
-            Category.is_default == True
+            Category.is_default
         )
         default_category = test_db.exec(statement).first()
         assert default_category is not None
@@ -53,7 +51,7 @@ class TestDefaultCategoryProtection:
         update_request = CategoryUpdate(name="New Name")
 
         with pytest.raises(HTTPException) as exc_info:
-            category_service.update(default_category.category_id, update_request)
+            category_service.update(default_category.category_id, update_request) # type: ignore
         
         assert exc_info.value.status_code == 409
         assert "default category" in exc_info.value.detail.lower()
@@ -62,7 +60,7 @@ class TestDefaultCategoryProtection:
         """409 Conflict: Cannot delete default category"""
         statement = select(Category).where(
             Category.user_id == test_user.user_id,
-            Category.is_default == True
+            Category.is_default
         )
         default_category = test_db.exec(statement).first()
         assert default_category is not None
@@ -70,7 +68,7 @@ class TestDefaultCategoryProtection:
         category_service = CategoryService(test_user, test_db)
 
         with pytest.raises(HTTPException) as exc_info:
-            category_service.delete(default_category.category_id)
+            category_service.delete(default_category.category_id) # type: ignore
 
         assert exc_info.value.status_code == 409
         assert "default category" in exc_info.value.detail.lower()
@@ -84,7 +82,7 @@ class TestDefaultCategoryConstraints:
         # Verify the user already has one default category
         statement = select(Category).where(
             Category.user_id == test_user.user_id,
-            Category.is_default == True
+            Category.is_default
         )
         existing_default = test_db.exec(statement).first()
         assert existing_default is not None
@@ -93,7 +91,7 @@ class TestDefaultCategoryConstraints:
         # Attempt to create a second default category directly (bypassing service layer)
         second_default = Category(
             name="Another Default",
-            user_id=test_user.user_id,
+            user_id=test_user.user_id, #type: ignore
             is_default=True,
             date_of_entry=date.today()
         )

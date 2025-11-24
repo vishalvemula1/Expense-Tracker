@@ -3,10 +3,9 @@ from sqlmodel import Session
 from fastapi import HTTPException
 from app.services.expense_service import ExpenseService
 from app.services.category_service import CategoryService
-from app.services.auth_service import AuthService
-from app.models import User, Category, Expense, ExpenseCreate, ExpenseUpdate, UserCreate, CategoryCreate
+from app.models import User, Category, Expense, ExpenseCreate, ExpenseUpdate, CategoryCreate
 from datetime import date
-
+from app.models.category import Color
 
 class TestCreate:
     """Tests for ExpenseService.create()"""
@@ -61,7 +60,7 @@ class TestCreate:
     def test_create_expense_other_users_category(self, test_db: Session, test_user: User, other_user: User):
         """403 Forbidden: Cannot create expense using another user's category"""
         other_service = CategoryService(other_user, test_db)
-        other_category = other_service.create(CategoryCreate(name="Other's Cat", tag="Red"))
+        other_category = other_service.create(CategoryCreate(name="Other's Cat", tag=Color.Red))
 
         # test_user tries to use other_user's category
         service = ExpenseService(test_user, test_db)
@@ -125,7 +124,7 @@ class TestUpdate:
         """Can change expense to a different owned category"""
         # Create new category
         cat_service = CategoryService(test_user, test_db)
-        new_category = cat_service.create(CategoryCreate(name="New Cat", tag="Blue"))
+        new_category = cat_service.create(CategoryCreate(name="New Cat", tag=Color.Blue))
 
         # Store original values to verify they don't change
         original_name = test_expense.name
@@ -158,7 +157,7 @@ class TestUpdate:
     def test_update_expense_other_users_category(self, test_db: Session, test_user: User, test_expense: Expense, other_user: User):
         """403 Forbidden: Cannot update expense to another user's category"""
         other_service = CategoryService(other_user, test_db)
-        other_category = other_service.create(CategoryCreate(name="Other's Cat", tag="Red"))
+        other_category = other_service.create(CategoryCreate(name="Other's Cat", tag=Color.Red))
 
         service = ExpenseService(test_user, test_db)
         update_data = ExpenseUpdate(

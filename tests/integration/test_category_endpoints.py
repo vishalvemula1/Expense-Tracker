@@ -7,9 +7,8 @@ These tests verify:
 - Category-expense relationship queries
 - Multi-user data isolation
 """
-import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
+from sqlmodel import Session
 from app.models import Category, Expense
 
 

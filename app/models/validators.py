@@ -1,67 +1,58 @@
-from pydantic import field_validator
-from typing import Literal
+from datetime import date
+from typing import Annotated
+from sqlmodel import Field
+from pydantic import StringConstraints, field_validator
+
+PositiveAmount = Annotated[float, 
+                           Field(ge=0, 
+                                 description="Amount must be greater than or equal to zero"
+                            )]
 
 
-# ==========================================
-# Validator Function & Mixins
-# ==========================================
+DateCheck = Annotated[date, Field(default_factory=date.today)]
+"""Date fields that defaults to today's date. Used for a class' entry and update to record time of entry"""
 
-WhitespaceStrategy = Literal["strict", "trimmed"]
+SmallText = Annotated[str, StringConstraints(min_length=1, max_length=50)]
 
-def create_string_validators(**field_configs: WhitespaceStrategy):
+LongText = Annotated[str, StringConstraints(min_length=1, max_length=1000)]
+
+
+def create_string_validators(*field_names):
     """
-    Factory function to create a mixin with field-specific validation strategies.
-
-    This function creates a reusable validator mixin that can handle multiple fields
-    with different whitespace processing rules.
-
+    Creates a validator mixin that trims whitespace and rejects empty strings.
+    
     Args:
-        **field_configs: Keyword arguments where:
-            - key = field name (e.g., "username", "description")
-            - value = whitespace strategy:
-                * 'strict': Removes ALL whitespace including spaces between words
-                            Use for: usernames, emails, codes, IDs
-                            Example: "hello world" -> "helloworld"
-
-                * 'trimmed': Only removes leading/trailing whitespace, keeps internal spaces
-                             Use for: descriptions, names, addresses, text content
-                             Example: "  hello world  " -> "hello world"
+        *fields: Field names to validate (e.g., 'username', 'email')
+    
+    Returns:
+        StringValidatorsMixin class to use as a base class
+    
+    Example:
+        Validator = create_string_validators('username', 'email')
+        class User(BaseModel, Validator):
+            username: str
+            email: str
     """
-
-    if not field_configs:
+    if not field_names:
         raise ValueError("At least one field must be specified")
 
-    all_fields = tuple(field_configs.keys())
+    class WhitespaceTrimmerMixin:
+        """Validates string fields by trimming whitespace and rejecting empty values"""
 
-    class StringValidatorsMixin:
-        """Validates string fields with configurable whitespace handling"""
-
-        @field_validator(*all_fields, mode="before")
+        @field_validator(*field_names, mode="before")
         @classmethod
         def validate_string_fields(cls, value, info):
-
             if value is None:
                 return value
 
             if not isinstance(value, str):
                 return value
 
-            field_name = info.field_name
-
-            strategy = field_configs.get(field_name)
-
-            if strategy == "strict":
-                value = "".join(value.split())
-
-            elif strategy == "trimmed":
-                value = value.strip()
-
-            else:
-                raise ValueError(f"Invalid strategy '{strategy}' for field '{field_name}'")
+            value = value.strip()
 
             if value == "":
-                raise ValueError(f"{field_name} cannot be empty or whitespace only")
+                raise ValueError(f"{info.field_name} cannot be empty or whitespace only")
 
             return value
 
-    return StringValidatorsMixin
+    return WhitespaceTrimmerMixin

@@ -1,8 +1,6 @@
-from ..models import User, UserCreate, Category, Token
+from ..models import User, UserCreate, Token
 from ..exceptions import db_transaction
 from ..security import get_password_hash
-from ..config import default_categories as defaults
-from datetime import date
 from sqlmodel import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from ..auth import authenticate_user, create_token

@@ -35,13 +35,13 @@ class TestCreateUserWithDefaults:
         default_category = test_db.exec(
             select(Category).where(
                 Category.user_id == user.user_id,
-                Category.is_default == True
+                Category.is_default
             )
         ).first()
 
         assert default_category is not None
         assert default_category.name == "Uncategorized"
-        assert default_category.is_default == True
+        assert default_category.is_default
 
     def test_create_user_duplicate_username(self, test_db: Session, test_user: User):
         """409 Conflict: Cannot create user with duplicate username"""

@@ -17,7 +17,7 @@ def create_default_category(mapper, connection, target):
     """
     Automatically creates a default 'Uncategorized' category when a new user is created.
     """
-    category_table = Category.__table__
+    category_table = Category.__table__ #type: ignore
     
     connection.execute(
         category_table.insert().values(
