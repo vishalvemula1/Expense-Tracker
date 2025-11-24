@@ -31,7 +31,7 @@ class AuthService:
     def login(self, form_data: OAuth2PasswordRequestForm) -> Token:
         user = authenticate_user(form_data.username, form_data.password, self.session)
 
-        token = create_token(user.user_id)
+        token = create_token(user.user_id) #type: ignore
 
         return Token(access_token=token, token_type="bearer")
     

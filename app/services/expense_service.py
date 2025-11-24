@@ -59,11 +59,14 @@ class ExpenseService:
         expense = self._get_expense(expense_id)
 
         with db_transaction(self.session, context="Expense Update") as db:
-            category_service = CategoryService(self.user, db)
-            category = category_service._get_category(update_request.category_id)
 
             update_data = update_request.model_dump(exclude_unset=True)
-            update_data.update({"category_id": category.category_id})
+
+            if "category_id" in update_data:
+                category_service = CategoryService(self.user, db)
+                category = category_service._get_category(update_request.category_id)
+                update_data["category_id"] = category.category_id
+
 
             expense.sqlmodel_update(update_data)
             expense.date_of_update = date.today()
