@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.services.auth_service import AuthService
 from app.models import User, UserCreate, Category
 import jwt
-from app.security import SECRET_KEY, ALGORITHM
+from app.security import secret_key, algorithm
 
 
 class TestCreateUserWithDefaults:
@@ -90,7 +90,7 @@ class TestLogin:
 
         token = auth_service.login(form_data)
 
-        decoded = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(token.access_token, secret_key, algorithms=[algorithm])
         assert decoded["sub"] == str(test_user.user_id)
         assert token.access_token is not None
         assert token.token_type == "bearer"

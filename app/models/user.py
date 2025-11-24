@@ -6,9 +6,8 @@ USERNAME_REGEX = "^[a-zA-Z0-9_-]+$"
 
 
 UserWhitespaceTrimmerMixin = create_string_validators("username", "email")
-
 class UserBase(SQLModel):
-    username: str = Field(unique=True, index=True, min_length=3, max_length=50, regex=USERNAME_REGEX)
+    username: str = Field(unique=True, index=True, min_length=3, max_length=50, schema_extra={"pattern": USERNAME_REGEX})
     email: EmailStr = Field(unique=True, index=True, min_length=3, max_length=128)
     salary: PositiveAmount | None
 
@@ -23,7 +22,7 @@ class User(UserBase, table=True):
     password_hash: str
 
 class UserUpdate(UserBase, UserWhitespaceTrimmerMixin):
-    username: str | None = Field(min_length=3, max_length=50, regex=USERNAME_REGEX, default=None)
+    username: str | None = Field(min_length=3, max_length=50, schema_extra={"pattern": USERNAME_REGEX}, default=None)
     email: EmailStr | None = None
     salary: PositiveAmount | None = None
     password: str | None = Field(min_length=8, max_length=128, default=None)

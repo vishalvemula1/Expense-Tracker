@@ -74,7 +74,7 @@ def test_category(test_db: Session, test_user: User):
     category = test_db.exec(
         select(Category).where(
             Category.user_id == test_user.user_id,
-            Category.is_default == True
+            Category.is_default
         )
     ).first()
     assert category is not None, "Default category should exist"
@@ -172,7 +172,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
     user1_default_cat = test_db.exec(
         select(Category).where(
             Category.user_id == user1.user_id,
-            Category.is_default == True
+            Category.is_default
         )
     ).first()
     assert user1_default_cat is not None
@@ -180,7 +180,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
     user2_default_cat = test_db.exec(
         select(Category).where(
             Category.user_id == user2.user_id,
-            Category.is_default == True
+            Category.is_default
         )
     ).first()
     assert user2_default_cat is not None

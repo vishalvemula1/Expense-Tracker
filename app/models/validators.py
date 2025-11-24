@@ -12,9 +12,9 @@ PositiveAmount = Annotated[float,
 DateCheck = Annotated[date, Field(default_factory=date.today)]
 """Date fields that defaults to today's date. Used for a class' entry and update to record time of entry"""
 
-SmallText = Annotated[str, StringConstraints(min_length=1, max_length=50)]
+SmallText = Annotated[str, StringConstraints(min_length=1, max_length=50, strip_whitespace=True)]
 
-LongText = Annotated[str, StringConstraints(min_length=1, max_length=1000)]
+LongText = Annotated[str, StringConstraints(min_length=1, max_length=1000, strip_whitespace=True)]
 
 
 def create_string_validators(*field_names):

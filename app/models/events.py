@@ -3,7 +3,7 @@ from .user import User
 from .category import Category
 from ..config import default_categories as defaults
 from datetime import date
-from ..exceptions import AppExceptions
+from ..exceptions import IntegrityExceptions
 
 # ==============================================================================
 # Event Listeners
@@ -33,9 +33,9 @@ def create_default_category(mapper, connection, target):
 @event.listens_for(Category, 'before_update')
 def prevent_default_category_modification(mapper, connection, target):
     if target.is_default:
-        raise AppExceptions.DefaultCategoryUneditable
+        raise IntegrityExceptions.DefaultCategoryUneditable
 
 @event.listens_for(Category, 'before_delete')
 def prevent_default_category_deletion(mapper, connection, target):
     if target.is_default:
-        raise AppExceptions.DefaultCategoryUneditable
+        raise IntegrityExceptions.DefaultCategoryUneditable

@@ -3,9 +3,9 @@ from pwdlib import PasswordHash
 
 from .config import settings
 
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+secret_key = settings.SECRET_KEY
+algorithm = settings.ALGORITHM
+access_token_expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")

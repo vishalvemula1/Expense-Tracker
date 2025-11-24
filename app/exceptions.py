@@ -13,15 +13,15 @@ class AppExceptions:
 
     Unauthorized = HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for this request")
 
-    DefaultCategoryUneditable = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Not allowed to edit or delete default category") 
-
 
 class IntegrityExceptions:
+    DefaultCategoryUneditable = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Not allowed to edit or delete default category") 
+    
     ForeignKeyDoesntExist = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reference: the referenced resource does not exist")
 
     UnknownIntegrityError = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="A database constraint was violated")
 
-    UserExists = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
+    UsernameExists = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists")
 
     EmailExists = HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
 
@@ -34,7 +34,7 @@ def handle_integrity_error(e: IntegrityError, context: str = ""):
     error_info = str(e.orig).lower()
 
     if "user.username" in error_info:
-        raise IntegrityExceptions.UserExists
+        raise IntegrityExceptions.UsernameExists
     
     if "user.email" in error_info:
         raise IntegrityExceptions.EmailExists

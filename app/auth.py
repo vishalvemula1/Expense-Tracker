@@ -9,7 +9,7 @@ from jwt.exceptions import InvalidTokenError
 from .exceptions import AppExceptions
 from .database import SessionDep
 from .models import User
-from .security import verify_password, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, oauth2_scheme
+from .security import verify_password, access_token_expire_minutes, secret_key, algorithm, oauth2_scheme
 
 def authenticate_user(username: str, password: str, session: Session) -> User:
      
@@ -33,11 +33,11 @@ def create_token(user_id: int,
         expire = datetime.now(timezone.utc) + expires_delta
 
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=access_token_expire_minutes)
 
     to_encode["exp"] = int(expire.timestamp()) 
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encoded_jwt
     
 
@@ -46,7 +46,7 @@ async def get_authenticated_user(token: Annotated[str, Depends(oauth2_scheme)],
     from .services.user_service import UserService
 
     try:
-        payload: dict[str, Any] = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload: dict[str, Any] = jwt.decode(token, secret_key, algorithms=[algorithm])
         user_id = payload.get("sub")
         if user_id is None:
             raise AppExceptions.CredentialsException

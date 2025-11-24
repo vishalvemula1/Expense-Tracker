@@ -1,8 +1,6 @@
-from .validators import PositiveAmount, DateCheck, SmallText, LongText, create_string_validators
+from .validators import PositiveAmount, DateCheck, SmallText, LongText
 from sqlmodel import Field, SQLModel
 
-
-ExpenseWhitespaceTrimmerMixin = create_string_validators("name", "description")
 
 
 class ExpenseBase(SQLModel):
@@ -11,10 +9,10 @@ class ExpenseBase(SQLModel):
     category_id: int | None = None
     description: LongText | None = None
 
-class ExpenseCreate(ExpenseBase, ExpenseWhitespaceTrimmerMixin):
+class ExpenseCreate(ExpenseBase):
     pass
 
-class ExpenseUpdate(SQLModel, ExpenseWhitespaceTrimmerMixin):
+class ExpenseUpdate(SQLModel):
     name: SmallText | None = None
     amount: PositiveAmount | None = None
     category_id: int | None = None
