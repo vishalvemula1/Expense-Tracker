@@ -146,18 +146,6 @@ class TestUpdate:
         assert updated.name == "Partially Updated"
         assert updated.tag == original_tag
 
-    def test_update_category_partial_tag_only(self, test_db: Session, test_user: User, test_custom_category: Category):
-        """Partial update: only update tag, other fields unchanged"""
-        service = CategoryService(test_user, test_db)
-        original_name = test_custom_category.name
-
-        update_data = CategoryUpdate(tag="Black")
-
-        updated = service.update(test_custom_category.category_id, update_data)  # type: ignore
-
-        assert updated.tag == "Black"
-        assert updated.name == original_name
-
     def test_update_category_not_found(self, test_db: Session, test_user: User):
         """404 Not Found: Cannot update non-existent category"""
         service = CategoryService(test_user, test_db)

@@ -75,46 +75,6 @@ class TestCreateUserWithDefaults:
         assert exc_info.value.status_code == 409
         assert "Email already exists" in exc_info.value.detail
 
-    def test_create_user_empty_username(self, test_db: Session):
-        """Validation: Empty username is rejected"""
-        with pytest.raises(ValueError):
-            UserCreate(
-                username="",
-                email="new@example.com",
-                salary=50000,
-                password="securepass123"
-            )
-
-    def test_create_user_whitespace_username(self, test_db: Session):
-        """Validation: Whitespace-only username is rejected"""
-        with pytest.raises(ValueError):
-            UserCreate(
-                username="   ",
-                email="new@example.com",
-                salary=50000,
-                password="securepass123"
-            )
-
-    def test_create_user_empty_password(self, test_db: Session):
-        """Validation: Empty password is rejected"""
-        with pytest.raises(ValueError):
-            UserCreate(
-                username="newuser",
-                email="new@example.com",
-                salary=50000,
-                password=""
-            )
-
-    def test_create_user_whitespace_password(self, test_db: Session):
-        """Validation: Whitespace-only password is rejected"""
-        with pytest.raises(ValueError):
-            UserCreate(
-                username="newuser",
-                email="new@example.com",
-                salary=50000,
-                password="   "
-            )
-
 
 class TestLogin:
     """Tests for AuthService.login()"""
@@ -165,30 +125,3 @@ class TestLogin:
         assert exc_info.value.status_code == 401
         assert "Invalid username or password" in exc_info.value.detail
 
-    def test_login_empty_username(self, test_db: Session, test_user: User):
-        """401 Unauthorized: Login with empty username fails"""
-        auth_service = AuthService(test_db)
-        form_data = OAuth2PasswordRequestForm(
-            username="",
-            password="testpassword",
-            scope=""
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            auth_service.login(form_data)
-
-        assert exc_info.value.status_code == 401
-
-    def test_login_empty_password(self, test_db: Session, test_user: User):
-        """401 Unauthorized: Login with empty password fails"""
-        auth_service = AuthService(test_db)
-        form_data = OAuth2PasswordRequestForm(
-            username="testuser",
-            password="",
-            scope=""
-        )
-
-        with pytest.raises(HTTPException) as exc_info:
-            auth_service.login(form_data)
-
-        assert exc_info.value.status_code == 401

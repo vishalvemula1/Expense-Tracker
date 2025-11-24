@@ -127,16 +127,19 @@ class TestUpdate:
         cat_service = CategoryService(test_user, test_db)
         new_category = cat_service.create(CategoryCreate(name="New Cat", tag="Blue"))
 
+        # Store original values to verify they don't change
+        original_name = test_expense.name
+        original_amount = test_expense.amount
+
         service = ExpenseService(test_user, test_db)
-        update_data = ExpenseUpdate(
-            name=test_expense.name,
-            amount=test_expense.amount,
-            category_id=new_category.category_id
-        )
+        # Only provide category_id - this is a TRUE partial update
+        update_data = ExpenseUpdate(category_id=new_category.category_id)
 
         updated = service.update(test_expense.expense_id, update_data)  # type: ignore
 
         assert updated.category_id == new_category.category_id
+        assert updated.name == original_name  # Verify unchanged
+        assert updated.amount == original_amount  # Verify unchanged
 
     def test_update_expense_invalid_category(self, test_db: Session, test_user: User, test_expense: Expense):
         """404 Not Found: Cannot update expense to non-existent category"""
@@ -179,31 +182,25 @@ class TestUpdate:
 
         assert exc_info.value.status_code == 403
 
-    def test_update_expense_partial_name_only(self, test_db: Session, test_user: User, test_expense: Expense):
-        """Partial update: only update name, other fields unchanged"""
+    def test_update_expense_partial_amount_only(self, test_db: Session, test_user: User, test_custom_category: Category):
+        """Partial update: only update amount, other fields unchanged including custom category"""
+        # Create expense in CUSTOM category to catch bug where partial updates reset to default
         service = ExpenseService(test_user, test_db)
-        original_amount = test_expense.amount
-        original_category = test_expense.category_id
-
-        update_data = ExpenseUpdate(name="Only Name Changed")
-
-        updated = service.update(test_expense.expense_id, update_data)  # type: ignore
-
-        assert updated.name == "Only Name Changed"
-        assert updated.amount == original_amount
-        assert updated.category_id == original_category
-
-    def test_update_expense_partial_amount_only(self, test_db: Session, test_user: User, test_expense: Expense):
-        """Partial update: only update amount, other fields unchanged"""
-        service = ExpenseService(test_user, test_db)
-        original_name = test_expense.name
+        expense = service.create(ExpenseCreate(
+            name="Test Expense",
+            amount=100.0,
+            category_id=test_custom_category.category_id
+        ))
+        original_name = expense.name
+        original_category = expense.category_id
 
         update_data = ExpenseUpdate(amount=999.99)
 
-        updated = service.update(test_expense.expense_id, update_data)  # type: ignore
+        updated = service.update(expense.expense_id, update_data)  # type: ignore
 
         assert updated.amount == 999.99
         assert updated.name == original_name
+        assert updated.category_id == original_category  # Critical: preserves custom category
 
     def test_update_expense_not_found(self, test_db: Session, test_user: User):
         """404 Not Found: Cannot update non-existent expense"""

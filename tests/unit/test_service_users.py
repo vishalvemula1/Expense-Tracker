@@ -88,11 +88,15 @@ class TestUpdate:
         """Empty update makes no changes"""
         service = UserService(test_user, test_db)
         original_username = test_user.username
+        original_email = test_user.email
+        original_salary = test_user.salary
         update_data = UserUpdate()
 
         updated = service.update(update_data)
 
         assert updated.username == original_username
+        assert updated.email == original_email
+        assert updated.salary == original_salary
 
 
 class TestDelete:

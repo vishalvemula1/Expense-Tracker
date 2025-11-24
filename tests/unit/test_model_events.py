@@ -1,6 +1,7 @@
 import pytest
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 from app.models import User, UserCreate, Category, CategoryUpdate
 from app.services.auth_service import AuthService
 from app.services.category_service import CategoryService
@@ -51,10 +52,11 @@ class TestDefaultCategoryProtection:
         category_service = CategoryService(test_user, test_db)
         update_request = CategoryUpdate(name="New Name")
 
-        with pytest.raises(AppExceptions.DefaultCategoryUneditable.__class__) as exc_info:
+        with pytest.raises(HTTPException) as exc_info:
             category_service.update(default_category.category_id, update_request)
         
         assert exc_info.value.status_code == 409
+        assert "default category" in exc_info.value.detail.lower()
 
     def test_prevent_default_category_delete(self, test_db: Session, test_user: User):
         """409 Conflict: Cannot delete default category"""
@@ -67,10 +69,11 @@ class TestDefaultCategoryProtection:
 
         category_service = CategoryService(test_user, test_db)
 
-        with pytest.raises(AppExceptions.DefaultCategoryUneditable.__class__) as exc_info:
+        with pytest.raises(HTTPException) as exc_info:
             category_service.delete(default_category.category_id)
 
         assert exc_info.value.status_code == 409
+        assert "default category" in exc_info.value.detail.lower()
 
 
 class TestDefaultCategoryConstraints:

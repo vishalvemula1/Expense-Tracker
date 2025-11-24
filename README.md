@@ -18,7 +18,7 @@ This is a small but intentionally designed service that handles real multi-user 
 * **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design
 * **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
 * **Full CRUD for Expenses & Categories**—With proper validation and ownership checks
-* **113 Tests**—70 unit tests + 43 integration tests covering security, edge cases, and end-to-end flows
+* **100+ Tests**—70+ unit tests + 43+ integration tests covering security, edge cases, and end-to-end flows
 
 ## **Architecture Overview**
 
@@ -132,8 +132,8 @@ expense_tracker/
 │   ├── exceptions.py    # Error handling
 │   └── main.py          # App entry point
 ├── tests/
-│   ├── unit/            # Service layer tests (70)
-│   ├── integration/     # End-to-end tests (43)
+│   ├── unit/            # Service layer tests
+│   ├── integration/     # End-to-end tests
 │   └── conftest.py      # Shared fixtures
 └── database.db
 ```
