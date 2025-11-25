@@ -18,6 +18,10 @@ class UserRead(UserBase):
     user_id: int 
 
 class User(UserBase, table=True):
+    __table_args__ = (
+        CheckConstraint('username = LOWER(username)', name='ck_username_lowercase'),
+        CheckConstraint('email = LOWER(email)', name='ck_email_lowercase'),
+    )
     user_id: int | None = Field(primary_key=True, default=None)
     password_hash: str
 
@@ -26,6 +30,3 @@ class UserUpdate(UserBase, UserWhitespaceTrimmerMixin):
     email: EmailStr | None = None
     salary: PositiveAmount | None = None
     password: str | None = Field(min_length=8, max_length=128, default=None)
-    __table_args__ = (
-        CheckConstraint('username = LOWER(username)', name='ck_username_lowercase'),
-        CheckConstraint('email = LOWER(email)', name='ck_email_lowercase'),)
