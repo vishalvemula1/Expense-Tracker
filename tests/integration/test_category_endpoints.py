@@ -30,14 +30,14 @@ class TestCategoryCreation:
         assert response.status_code == 200
         data = response.json()
         
-        assert data["name"] == "Entertainment"
+        assert data["name"] == "entertainment"  # lowercased
         assert data["tag"] == "Blue"
         assert "category_id" in data
         
         # Verify in database
         category = test_db.get(Category, data["category_id"])
         assert category is not None
-        assert category.name == "Entertainment"
+        assert category.name == "entertainment"  # lowercased
         assert category.user_id == test_user.user_id
 
 
@@ -123,12 +123,12 @@ class TestCategoryUpdate:
         assert response.status_code == 200
         data = response.json()
         
-        assert data["name"] == "Updated Name"
+        assert data["name"] == "updated name"  # lowercased
         assert data["tag"] == "Red"
         
         # Verify in database
         test_db.refresh(test_custom_category)
-        assert test_custom_category.name == "Updated Name"
+        assert test_custom_category.name == "updated name"  # lowercased
         assert test_custom_category.tag == "Red"
 
 

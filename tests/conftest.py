@@ -85,7 +85,7 @@ def test_custom_category(test_db: Session, test_user: User):
     """A non-default category that can be edited/deleted"""
     assert test_user.user_id
     category = Category(
-        name="Custom Category",
+        name="custom category",  # lowercase to match DB constraint
         user_id=test_user.user_id,
         date_of_entry=date.today(),
         tag="Blue" #type: ignore
@@ -187,7 +187,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
 
     # Create additional categories for User 1
     user1_food_cat = Category(
-        name="Food",
+        name="food",  # lowercase to match DB constraint
         user_id=user1.user_id,
         tag="Blue", #type: ignore
         date_of_entry=date.today()
@@ -199,7 +199,7 @@ def multi_user_data(test_db: Session) -> MultiUserData:
 
     # Create additional categories for User 2
     user2_travel_cat = Category(
-        name="Travel",
+        name="travel",  # lowercase to match DB constraint
         user_id=user2.user_id,
         tag="Red", #type: ignore
         date_of_entry=date.today()

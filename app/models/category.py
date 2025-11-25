@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
-from .validators import DateCheck, LongText, SmallText
+from .validators import DateCheck, LongText, SmallText, create_string_validators
 from enum import Enum
-from sqlalchemy import UniqueConstraint, Index, text
+from sqlalchemy import UniqueConstraint, Index, text, CheckConstraint
 
 
 class Color(str, Enum):
@@ -11,16 +11,18 @@ class Color(str, Enum):
     White = "White"
 
 
+CategoryStringValidators = create_string_validators('name')
+
 class CategoryBase(SQLModel):
     name: SmallText
     description: LongText | None = None
     tag: Color | None = None
 
 
-class CategoryCreate(CategoryBase):
+class CategoryCreate(CategoryBase, CategoryStringValidators):
     pass
 
-class CategoryUpdate(CategoryBase):
+class CategoryUpdate(CategoryBase, CategoryStringValidators):
     name: SmallText | None = None
     description: LongText | None = None
     tag: Color | None = None
@@ -44,6 +46,7 @@ class Category(CategoryBase, table=True):
             unique=True,
             sqlite_where=text('is_default = 1')
         ),
+        CheckConstraint('name = LOWER(name)', name='ck_category_name_lowercase'),
     )
     user_id: int = Field(foreign_key="user.user_id", index=True, ondelete="CASCADE")
     category_id: int | None = Field(primary_key=True, default=None)

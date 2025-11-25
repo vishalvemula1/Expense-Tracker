@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     model_config = model_config
 
 class Defaults(BaseSettings):
-    DEFAULT_CATEGORY_NAME: str = "Uncategorized"
+    DEFAULT_CATEGORY_NAME: str = "uncategorized"
     DEFAULT_CATEGORY_DESCRIPTION: str = "All your uncategorized expenses"
     DEFAULT_CATEGORY_TAG: str = "Black"
     

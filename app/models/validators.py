@@ -37,7 +37,7 @@ def create_string_validators(*field_names):
         raise ValueError("At least one field must be specified")
 
     class WhitespaceTrimmerMixin:
-        """Validates string fields by trimming whitespace and rejecting empty values"""
+        """Validates string fields by trimming whitespace and uses .lower() before sending it to the DB"""
 
         @field_validator(*field_names, mode="before")
         @classmethod
@@ -48,10 +48,7 @@ def create_string_validators(*field_names):
             if not isinstance(value, str):
                 return value
 
-            value = value.strip()
-
-            if value == "":
-                raise ValueError(f"{info.field_name} cannot be empty or whitespace only")
+            value = value.strip().lower()
 
             return value
 

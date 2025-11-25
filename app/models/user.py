@@ -1,6 +1,6 @@
 from pydantic import EmailStr
 from .validators import PositiveAmount, create_string_validators
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, CheckConstraint
 
 USERNAME_REGEX = "^[a-zA-Z0-9_-]+$"
 
@@ -26,3 +26,6 @@ class UserUpdate(UserBase, UserWhitespaceTrimmerMixin):
     email: EmailStr | None = None
     salary: PositiveAmount | None = None
     password: str | None = Field(min_length=8, max_length=128, default=None)
+    __table_args__ = (
+        CheckConstraint('username = LOWER(username)', name='ck_username_lowercase'),
+        CheckConstraint('email = LOWER(email)', name='ck_email_lowercase'),)
