@@ -1,24 +1,32 @@
 # **Expense Tracker API**
 
-A RESTful multi-user backend built with FastAPI and SQLModel. The focus is straightforward: clean structure, predictable behavior, and security that comes from architectural choices rather than patches.
+A containerized RESTful backend built with **FastAPI**, **SQLModel**, and **Docker**. Clean architecture, proper test pyramid (118 tests), and security by design.
 
-This is a small but intentionally designed service that handles real multi-user rules, ownership, and validation without relying on framework magic or scaffolding.
+```bash
+docker run -dp 8000:8000 vishalvemula1/expense-tracker
+```
+
+API available at `http://localhost:8000`
+
+---
 
 ## **Highlights**
 
-* Multi-user architecture with ownership validated through service layer
-* /me endpoint design removes user-parameter edge cases entirely
-* Clear domain rules: composite uniqueness, default-category protection, and proper schema constraints
-* Transaction-scoped DB operations with structured integrity handling
-* Comprehensive test suite (118 tests) implementing proper test pyramid architecture
-
-## **Features**
-
+* **Fully Containerized**—Zero-config deployment with Docker
+* **118 Tests**—85 unit + 33 integration, proper test pyramid
 * **JWT Authentication**—Token-based auth with secure password hashing
-* **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design
+* **Multi-User Isolation**—Ownership validated at service layer; cross-user exploits impossible by design
+* **`/me` Endpoint Design**—Eliminates user-parameter vulnerabilities entirely
 * **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
-* **Full CRUD for Expenses & Categories**—With proper validation and ownership checks
-* **118 Tests**—85 unit tests + 33 integration tests covering security, edge cases, and end-to-end flows
+
+## **Tech Stack**
+
+* FastAPI
+* SQLModel (SQLAlchemy + Pydantic)
+* Docker
+* SQLite (dev) / PostgreSQL-ready
+* JWT for auth
+* Pytest
 
 ## **Architecture Overview**
 
@@ -28,38 +36,23 @@ This is a small but intentionally designed service that handles real multi-user 
 * **Models**: SQLModel schemas with validators, composite constraints, and foreign keys
 * **DB Layer**: Transaction helpers with structured exception mapping
 
-## **Tech Stack**
+## **Key Design Decisions**
 
-* FastAPI
-* SQLModel (SQLAlchemy + Pydantic)
-* SQLite for dev
-* JWT for auth
-* Pytest + pytest-asyncio
+### **Security Through Architecture: The /me Endpoint Design**
 
-## **Quick Start**
+Early on, the `/users/{id}/expenses` pattern required every endpoint to compare the `user_id` in the URL with the `sub` in the JWT. Even with careful checks, the design made it possible for a developer to forget a comparison or validate inconsistently.
 
-```bash
-git clone https://github.com/vishalvemula1/expense-tracker.git
-cd expense-tracker
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+Switching to `/me/expenses` removed the parameter entirely. No `user_id` in the URL means no chance of manipulation, no forgotten comparisons, and no test cases for states that can't exist. One architectural change erased a whole category of bugs.
 
-Create a `.env` file in the root directory:
+### **Service Layer Pattern for Business Logic Isolation**
 
-```bash
-SECRET_KEY=your_secret_key_here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
+Moving business logic into service classes solved several architectural problems:
 
-Run and test:
+* **Ownership validation**: Each service method verifies ownership internally. `ExpenseService._get_expense()` checks if the expense belongs to the authenticated user, eliminating the possibility of endpoints forgetting this check.
+* **Cross-service coordination**: `ExpenseService` can instantiate `CategoryService` to validate category ownership when creating expenses, establishing clear dependencies without circular imports.
+* **Transaction consistency**: The `db_transaction` context manager traps integrity errors and routes them to consistent HTTP responses. Every write path behaves the same without repeating error-handling code.
 
-```bash
-uvicorn app.main:app --reload
-pytest
-```
+---
 
 ## **API Overview**
 
@@ -91,34 +84,6 @@ pytest
 * PUT /me/expenses/{expense_id}
 * DELETE /me/expenses/{expense_id}
 
-## **Key Design Decisions**
-
-### **1. Security Through Architecture: The /me Endpoint Design**
-
-A concrete example: early on, the /users/{id}/expenses pattern required every endpoint to compare the user_id in the URL with the sub in the JWT. Even with careful checks, the design made it possible for a developer to forget one comparison or validate it inconsistently. It also forced tests to cover every permutation of mismatched IDs.
-
-Switching to /me/expenses removed the parameter entirely. No user_id in the URL means no chance of someone manipulating it, no forgotten comparisons, and no test cases for a state that can no longer exist. One architectural change erased a whole category of bugs.
-
-### **2. Service Layer Pattern for Business Logic Isolation**
-
-Moving business logic into service classes (AuthService, UserService, ExpenseService, CategoryService) solved several architectural problems:
-
-* **Ownership validation**: Each service method verifies ownership internally before any operation. ExpenseService._get_expense() checks if the expense belongs to the authenticated user, eliminating the possibility of endpoints forgetting this check.
-* **Cross-service coordination**: ExpenseService can instantiate CategoryService to validate category ownership when creating expenses, establishing clear dependencies without circular imports.
-* **Transaction consistency**: The db_transaction context manager traps integrity errors (like duplicate category names per user via composite uniqueness) and routes them to consistent HTTP responses. Every write path behaves the same without repeating error-handling code.
-* **Standardized method naming**: All services follow create/get/update/delete/list conventions, making the codebase predictable and maintainable.
-
-These weren't abstractions for neatness—they eliminated repetitive code and prevented subtle inconsistencies.
-
-
-### **3. Deliberate AI Use: Core Logic vs. Test Boilerplate**
-
-For example, when relying on AI-generated tests early on, none of them explored cross-user scenarios. A test like "Can User A update an expense belonging to User B?" simply didn't exist. Writing that test manually exposed real authorization gaps that AI had no intuition to look for. This was eventually a problem that was phased out due to the /me refactor making these kind of cross-user attacks impossible by design but that wasn't always the case.
-
-This is why the core application logic in the app/ directory was handwritten. While AI can scaffold a "working" endpoint, it struggles to weave in the project's specific architectural needs, like integrating the correct ownership checks in service methods or the db_transaction helper for consistent error handling. These are the exact vulnerabilities that AI-generated *application code* would have likely introduced.
-
-AI was therefore intentionally limited to tests/, where it could accelerate boilerplate, but kept out of app/, where its inability to grasp architectural intent would have compromised quality and security.
-
 ## **Project Structure**
 
 ```
@@ -138,32 +103,48 @@ expense_tracker/
 │   │   └── security/    # Multi-tenancy tests
 │   ├── integration/     # End-to-end HTTP tests
 │   └── conftest.py      # Shared fixtures
+├── Dockerfile
 └── database.db
 ```
 
 ## **Running Tests**
 
 ```bash
-# Run all tests
-pytest
+# Docker
+docker run vishalvemula1/expense-tracker pytest -q
 
-# Run only unit tests
-pytest tests/unit/
-
-# Run only integration tests
-pytest tests/integration/
-
-# Run with coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test class
-pytest tests/unit/services/test_expense_service.py::TestPartialUpdate -v
+# Local
+pytest                          # All tests
+pytest tests/unit/              # Unit only
+pytest tests/integration/       # Integration only
+pytest --cov=app                # With coverage
 ```
 
-## **Future Improvements**
+<summary><strong>Local Development Setup</strong></summary>
 
-* Date-range filtering
-* PostgreSQL support (async engine with asyncpg)
-* True async/await throughout the stack
-* Dockerization
+```bash
+git clone https://github.com/vishalvemula1/expense-tracker.git
+cd expense-tracker
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Create `.env`:
+
+```bash
+SECRET_KEY=your_secret_key_here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+Run:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+
+## **Future Improvements**
+* PostgreSQL migration 
 * Cloud deployment

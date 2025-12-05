@@ -20,3 +20,12 @@ database.db
 pyproject.toml
 .python-version
 uv.lock
+
+Architecture.md
+
+
+_archive
+.copilot
+.vscode
+
+.git
