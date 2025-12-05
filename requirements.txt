@@ -1,4 +1,4 @@
-fastapi==0.119.0
+fastapi[standard]==0.119.0
 uvicorn==0.37.0
 sqlmodel==0.0.27
 pydantic==2.12.2
@@ -7,7 +7,7 @@ python-dotenv==1.1.1
 PyJWT==2.10.1
 python-multipart==0.0.20
 email-validator==2.3.0
-pwdlib==0.3.0
+pwdlib[argon2]==0.3.0
 httpx==0.28.1
 pytest==8.4.2
 pytest-asyncio==1.2.0

@@ -43,7 +43,7 @@ git clone https://github.com/vishalvemula1/expense-tracker.git
 cd expense-tracker
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r app/requirements.txt
+pip install -r requirements.txt
 ```
 
 Create a `.env` file in the root directory:
