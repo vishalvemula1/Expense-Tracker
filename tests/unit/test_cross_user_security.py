@@ -26,47 +26,21 @@ from app.services import CategoryService, ExpenseService
 class TestCategoryAccess:
     """Verify users cannot access other users' categories."""
 
-    def test_get_other_users_category_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_custom_category: Category
+    @pytest.mark.parametrize("operation,args", [
+        pytest.param(lambda svc, cat_id: svc.get(cat_id), (), id="get"),
+        pytest.param(lambda svc, cat_id: svc.update(cat_id, CategoryUpdate(name="Hacked")), (), id="update"),
+        pytest.param(lambda svc, cat_id: svc.delete(cat_id), (), id="delete"),
+        pytest.param(lambda svc, cat_id: svc.get_expenses(cat_id), (), id="get_expenses"),
+    ])
+    def test_access_other_users_category_returns_403(
+        self, test_db: Session, test_user: User, other_user: User, 
+        test_custom_category: Category, operation, args
     ):
-        """Accessing another user's category returns 403, not 404"""
+        """All operations on another user's category return 403"""
         svc = CategoryService(other_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
-            svc.get(test_custom_category.category_id)  # type: ignore
-        
-        assert exc.value.status_code == 403
-
-    def test_update_other_users_category_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_custom_category: Category
-    ):
-        """Updating another user's category returns 403"""
-        svc = CategoryService(other_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.update(test_custom_category.category_id, CategoryUpdate(name="Hacked"))  # type: ignore
-        
-        assert exc.value.status_code == 403
-
-    def test_delete_other_users_category_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_custom_category: Category
-    ):
-        """Deleting another user's category returns 403"""
-        svc = CategoryService(other_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.delete(test_custom_category.category_id)  # type: ignore
-        
-        assert exc.value.status_code == 403
-
-    def test_get_expenses_from_other_users_category_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_category: Category
-    ):
-        """Getting expenses from another user's category returns 403"""
-        svc = CategoryService(other_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.get_expenses(test_category.category_id)  # type: ignore
+            operation(svc, test_custom_category.category_id)
         
         assert exc.value.status_code == 403
 
@@ -78,36 +52,19 @@ class TestCategoryAccess:
 class TestExpenseAccess:
     """Verify users cannot access other users' expenses."""
 
-    def test_get_other_users_expense_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_expense: Expense
+    @pytest.mark.parametrize("operation", [
+        pytest.param(lambda svc, exp_id: svc.get(exp_id), id="get"),
+        pytest.param(lambda svc, exp_id: svc.update(exp_id, ExpenseUpdate(amount=9999)), id="update"),
+        pytest.param(lambda svc, exp_id: svc.delete(exp_id), id="delete"),
+    ])
+    def test_access_other_users_expense_returns_403(
+        self, test_db: Session, test_user: User, other_user: User, test_expense: Expense, operation
     ):
-        """Accessing another user's expense returns 403"""
+        """All operations on another user's expense return 403"""
         svc = ExpenseService(other_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
-            svc.get(test_expense.expense_id)  # type: ignore
-        
-        assert exc.value.status_code == 403
-
-    def test_update_other_users_expense_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_expense: Expense
-    ):
-        """Updating another user's expense returns 403"""
-        svc = ExpenseService(other_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.update(test_expense.expense_id, ExpenseUpdate(amount=9999))  # type: ignore
-        
-        assert exc.value.status_code == 403
-
-    def test_delete_other_users_expense_returns_403(
-        self, test_db: Session, test_user: User, other_user: User, test_expense: Expense
-    ):
-        """Deleting another user's expense returns 403"""
-        svc = ExpenseService(other_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.delete(test_expense.expense_id)  # type: ignore
+            operation(svc, test_expense.expense_id)
         
         assert exc.value.status_code == 403
 

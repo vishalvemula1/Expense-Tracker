@@ -10,6 +10,7 @@ Tests for user service internals:
 """
 import pytest
 from sqlmodel import Session, select
+from fastapi import HTTPException
 
 from app.models import User, UserCreate, UserUpdate, Category, Expense, CategoryCreate, ExpenseCreate
 from app.models.category import Color
@@ -57,49 +58,35 @@ class TestPartialUpdate:
 class TestUniquenessOnUpdate:
     """Verify uniqueness constraints on update operations."""
 
-    def test_update_to_existing_username_fails(
-        self, test_db: Session, test_user: User, other_user: User
+    @pytest.mark.parametrize("field,get_value,expected_detail", [
+        pytest.param("username", lambda u: u.username, "Username", id="username"),
+        pytest.param("email", lambda u: u.email, "Email", id="email"),
+    ])
+    def test_update_to_existing_value_fails(
+        self, test_db: Session, test_user: User, other_user: User, field, get_value, expected_detail
     ):
-        """Cannot update username to one that already exists (409)"""
+        """Cannot update to a value that already exists (409)"""
         svc = UserService(test_user, test_db)
         
-        with pytest.raises(Exception) as exc:
-            svc.update(UserUpdate(username=other_user.username))
+        with pytest.raises(HTTPException) as exc:
+            svc.update(UserUpdate(**{field: get_value(other_user)}))
         
         assert exc.value.status_code == 409
-        assert "Username" in exc.value.detail
+        assert expected_detail in exc.value.detail
 
-    def test_update_to_existing_email_fails(
-        self, test_db: Session, test_user: User, other_user: User
-    ):
-        """Cannot update email to one that already exists (409)"""
+    @pytest.mark.parametrize("field,get_value", [
+        pytest.param("username", lambda u: u.username, id="username"),
+        pytest.param("email", lambda u: u.email, id="email"),
+    ])
+    def test_update_to_own_value_succeeds(self, test_db: Session, test_user: User, field, get_value):
+        """Updating to same value should NOT trigger uniqueness error"""
         svc = UserService(test_user, test_db)
+        original_value = get_value(test_user)
         
-        with pytest.raises(Exception) as exc:
-            svc.update(UserUpdate(email=other_user.email))
-        
-        assert exc.value.status_code == 409
-        assert "Email" in exc.value.detail
-
-    def test_update_username_to_own_value_succeeds(self, test_db: Session, test_user: User):
-        """Updating username to same value should NOT trigger uniqueness error"""
-        svc = UserService(test_user, test_db)
-        original_username = test_user.username
-        
-        svc.update(UserUpdate(username=original_username))
+        svc.update(UserUpdate(**{field: original_value}))
         
         test_db.refresh(test_user)
-        assert test_user.username == original_username
-
-    def test_update_email_to_own_value_succeeds(self, test_db: Session, test_user: User):
-        """Updating email to same value should NOT trigger uniqueness error"""
-        svc = UserService(test_user, test_db)
-        original_email = test_user.email
-        
-        svc.update(UserUpdate(email=original_email))
-        
-        test_db.refresh(test_user)
-        assert test_user.email == original_email
+        assert get_value(test_user) == original_value
 
 
 class TestCascadeDelete:

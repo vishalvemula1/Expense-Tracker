@@ -23,22 +23,18 @@ from app.services import CategoryService, ExpenseService
 class TestDefaultCategoryProtection:
     """Verify default category cannot be modified or deleted."""
 
-    def test_cannot_update_default_category(self, test_db: Session, test_user: User, test_category: Category):
-        """409: Cannot modify the default category"""
+    @pytest.mark.parametrize("operation", [
+        pytest.param(lambda svc, cat_id: svc.update(cat_id, CategoryUpdate(name="Renamed")), id="update"),
+        pytest.param(lambda svc, cat_id: svc.delete(cat_id), id="delete"),
+    ])
+    def test_cannot_modify_default_category(
+        self, test_db: Session, test_user: User, test_category: Category, operation
+    ):
+        """409: Cannot update or delete the default category"""
         svc = CategoryService(test_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
-            svc.update(test_category.category_id, CategoryUpdate(name="Renamed"))  # type: ignore
-        
-        assert exc.value.status_code == 409
-        assert "default" in exc.value.detail.lower()
-
-    def test_cannot_delete_default_category(self, test_db: Session, test_user: User, test_category: Category):
-        """409: Cannot delete the default category"""
-        svc = CategoryService(test_user, test_db)
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.delete(test_category.category_id)  # type: ignore
+            operation(svc, test_category.category_id)
         
         assert exc.value.status_code == 409
 

@@ -171,51 +171,29 @@ class TestUserUniqueness:
     Expects: HTTPException 409 on duplicate.
     """
 
-    def test_duplicate_username_exact_rejected(self, test_db: Session, test_user):
-        """'testuser' exists -> 'testuser' rejected"""
+    @pytest.mark.parametrize("username", [
+        pytest.param("testuser", id="exact"),
+        pytest.param(" testuser ", id="whitespace"),
+        pytest.param("TESTUSER", id="uppercase"),
+    ])
+    def test_duplicate_username_rejected(self, test_db: Session, test_user, username):
+        """Duplicate username (exact, whitespace, case) -> 409"""
         with pytest.raises(HTTPException) as exc:
             AuthService(test_db).create_user_with_defaults(
-                UserCreate(username="testuser", email="other@x.com", salary=0, password="validpass")
+                UserCreate(username=username, email="other@x.com", salary=0, password="validpass")
             )
         assert exc.value.status_code == 409
 
-    def test_duplicate_username_with_whitespace_rejected(self, test_db: Session, test_user):
-        """'testuser' exists -> ' testuser ' rejected (trimmed)"""
+    @pytest.mark.parametrize("email", [
+        pytest.param("test@example.com", id="exact"),
+        pytest.param(" test@example.com ", id="whitespace"),
+        pytest.param("TEST@EXAMPLE.COM", id="uppercase"),
+    ])
+    def test_duplicate_email_rejected(self, test_db: Session, test_user, email):
+        """Duplicate email (exact, whitespace, case) -> 409"""
         with pytest.raises(HTTPException) as exc:
             AuthService(test_db).create_user_with_defaults(
-                UserCreate(username=" testuser ", email="other@x.com", salary=0, password="validpass")
-            )
-        assert exc.value.status_code == 409
-
-    def test_duplicate_username_different_case_rejected(self, test_db: Session, test_user):
-        """'testuser' exists -> 'TESTUSER' rejected (lowercased)"""
-        with pytest.raises(HTTPException) as exc:
-            AuthService(test_db).create_user_with_defaults(
-                UserCreate(username="TESTUSER", email="other@x.com", salary=0, password="validpass")
-            )
-        assert exc.value.status_code == 409
-
-    def test_duplicate_email_exact_rejected(self, test_db: Session, test_user):
-        """'test@example.com' exists -> 'test@example.com' rejected"""
-        with pytest.raises(HTTPException) as exc:
-            AuthService(test_db).create_user_with_defaults(
-                UserCreate(username="newuser", email="test@example.com", salary=0, password="validpass")
-            )
-        assert exc.value.status_code == 409
-
-    def test_duplicate_email_with_whitespace_rejected(self, test_db: Session, test_user):
-        """'test@example.com' exists -> ' test@example.com ' rejected (trimmed)"""
-        with pytest.raises(HTTPException) as exc:
-            AuthService(test_db).create_user_with_defaults(
-                UserCreate(username="newuser", email=" test@example.com ", salary=0, password="validpass")
-            )
-        assert exc.value.status_code == 409
-
-    def test_duplicate_email_different_case_rejected(self, test_db: Session, test_user):
-        """'test@example.com' exists -> 'TEST@EXAMPLE.COM' rejected (lowercased)"""
-        with pytest.raises(HTTPException) as exc:
-            AuthService(test_db).create_user_with_defaults(
-                UserCreate(username="newuser", email="TEST@EXAMPLE.COM", salary=0, password="validpass")
+                UserCreate(username="newuser", email=email, salary=0, password="validpass")
             )
         assert exc.value.status_code == 409
 
@@ -230,32 +208,18 @@ class TestCategoryUniqueness:
     to ensure names are normalized via Pydantic validators before storage.
     """
 
-    def test_duplicate_name_same_user_rejected(self, test_db: Session, test_user):
-        """User has 'groceries' -> creating 'groceries' rejected"""
-        svc = CategoryService(test_user, test_db)
-        # Create initial category through service (gets lowercased)
-        svc.create(CategoryCreate(name="Groceries"))
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.create(CategoryCreate(name="groceries"))
-        assert exc.value.status_code == 409
-
-    def test_duplicate_name_different_case_rejected(self, test_db: Session, test_user):
-        """User has 'groceries' -> 'GROCERIES' rejected (both normalize to same)"""
+    @pytest.mark.parametrize("duplicate_name", [
+        pytest.param("groceries", id="exact"),
+        pytest.param("GROCERIES", id="uppercase"),
+        pytest.param("  Groceries  ", id="whitespace"),
+    ])
+    def test_duplicate_name_same_user_rejected(self, test_db: Session, test_user, duplicate_name):
+        """Duplicate category name (exact, case, whitespace) -> 409"""
         svc = CategoryService(test_user, test_db)
         svc.create(CategoryCreate(name="Groceries"))
         
         with pytest.raises(HTTPException) as exc:
-            svc.create(CategoryCreate(name="GROCERIES"))
-        assert exc.value.status_code == 409
-
-    def test_duplicate_name_with_whitespace_rejected(self, test_db: Session, test_user):
-        """User has 'groceries' -> '  Groceries  ' rejected (trimmed + lowercased)"""
-        svc = CategoryService(test_user, test_db)
-        svc.create(CategoryCreate(name="Groceries"))
-        
-        with pytest.raises(HTTPException) as exc:
-            svc.create(CategoryCreate(name="  Groceries  "))
+            svc.create(CategoryCreate(name=duplicate_name))
         assert exc.value.status_code == 409
 
     def test_same_name_different_users_accepted(self, test_db: Session, test_user, other_user):
