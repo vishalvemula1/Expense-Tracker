@@ -4,11 +4,13 @@ Integration tests for user endpoints (/me).
 These tests verify:
 - User profile retrieval
 - User profile updates
-- User deletion with cascading effects
+- User deletion
+
+NOTE: Cascade delete tests are in unit/test_user_service.py
 """
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from app.models import User, Category, Expense
+from app.models import User
 
 
 class TestUserProfile:
@@ -88,30 +90,6 @@ class TestUserDeletion:
         deleted_user = test_db.get(User, user_id)
         assert deleted_user is None
 
-    def test_delete_user_cascades_to_categories_and_expenses(
-        self, 
-        authenticated_client: TestClient, 
-        test_user: User,
-        test_category: Category,
-        test_expense: Expense,
-        test_db: Session
-    ):
-        """Deleting user cascades to delete their categories and expenses"""
-        category_id = test_category.category_id
-        expense_id = test_expense.expense_id
-        
-        response = authenticated_client.delete("/me")
-        
-        assert response.status_code == 200
-        
-        # Verify categories deleted
-        deleted_category = test_db.get(Category, category_id)
-        assert deleted_category is None
-        
-        # Verify expenses deleted
-        deleted_expense = test_db.get(Expense, expense_id)
-        assert deleted_expense is None
-
 
 class TestMultiUserIsolation:
     """Test that users cannot access other users' profiles"""
@@ -137,3 +115,4 @@ class TestMultiUserIsolation:
         
         # Profiles are different
         assert data1["user_id"] != data2["user_id"]
+

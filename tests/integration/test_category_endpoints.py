@@ -5,7 +5,8 @@ These tests verify:
 - Category CRUD operations via HTTP
 - Category listing with pagination
 - Category-expense relationship queries
-- Multi-user data isolation
+
+NOTE: Multi-user isolation (403) tests are in unit/test_cross_user_security.py
 """
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -177,68 +178,3 @@ class TestCategoryExpenses:
         expense_ids = [exp["expense_id"] for exp in data]
         assert test_expense.expense_id in expense_ids
 
-
-class TestMultiUserCategoryIsolation:
-    """Test that users cannot access other users' categories"""
-
-    def test_user_cannot_view_other_users_category(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """User 1 cannot access User 2's category"""
-        user2_category_id = multi_user_data.user2_travel_category.category_id
-        
-        response = user1_client.get(f"/me/categories/{user2_category_id}")
-        
-        assert response.status_code == 403
-
-    def test_user_cannot_update_other_users_category(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """User 1 cannot update User 2's category"""
-        user2_category_id = multi_user_data.user2_travel_category.category_id
-        
-        response = user1_client.put(
-            f"/me/categories/{user2_category_id}",
-            json={"name": "Hacked"}
-        )
-        
-        assert response.status_code == 403
-
-    def test_user_cannot_delete_other_users_category(
-        self,
-        user1_client: TestClient,
-        multi_user_data,
-        test_db: Session
-    ):
-        """User 1 cannot delete User 2's category"""
-        user2_category_id = multi_user_data.user2_travel_category.category_id
-        
-        response = user1_client.delete(f"/me/categories/{user2_category_id}")
-        
-        assert response.status_code == 403
-        
-        # Verify category still exists
-        category = test_db.get(Category, user2_category_id)
-        assert category is not None
-
-    def test_list_categories_only_shows_own_categories(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """List endpoint only returns authenticated user's categories"""
-        response = user1_client.get("/me/categories/")
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        # Should have user1's categories
-        category_names = [cat["name"] for cat in data]
-        assert multi_user_data.user1_food_category.name in category_names
-        
-        # Should NOT have user2's categories
-        assert multi_user_data.user2_travel_category.name not in category_names

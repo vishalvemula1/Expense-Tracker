@@ -10,7 +10,7 @@ This is a small but intentionally designed service that handles real multi-user 
 * /me endpoint design removes user-parameter edge cases entirely
 * Clear domain rules: composite uniqueness, default-category protection, and proper schema constraints
 * Transaction-scoped DB operations with structured integrity handling
-* Comprehensive test suite (113 tests) implementing proper test pyramid architecture
+* Comprehensive test suite (118 tests) implementing proper test pyramid architecture
 
 ## **Features**
 
@@ -18,7 +18,7 @@ This is a small but intentionally designed service that handles real multi-user 
 * **Multi-User Isolation**—Each user has their own categories and expenses; cross-user exploits impossible by design
 * **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
 * **Full CRUD for Expenses & Categories**—With proper validation and ownership checks
-* **100+ Tests**—70+ unit tests + 43+ integration tests covering security, edge cases, and end-to-end flows
+* **118 Tests**—85 unit tests + 33 integration tests covering security, edge cases, and end-to-end flows
 
 ## **Architecture Overview**
 
@@ -132,8 +132,11 @@ expense_tracker/
 │   ├── exceptions.py    # Error handling
 │   └── main.py          # App entry point
 ├── tests/
-│   ├── unit/            # Service layer tests
-│   ├── integration/     # End-to-end tests
+│   ├── unit/
+│   │   ├── services/    # Service layer tests
+│   │   ├── validation/  # Pydantic & DB constraint tests
+│   │   └── security/    # Multi-tenancy tests
+│   ├── integration/     # End-to-end HTTP tests
 │   └── conftest.py      # Shared fixtures
 └── database.db
 ```
@@ -154,7 +157,7 @@ pytest tests/integration/
 pytest --cov=app --cov-report=html
 
 # Run specific test class
-pytest tests/unit/test_service_expenses.py::TestCreate -v
+pytest tests/unit/services/test_expense_service.py::TestPartialUpdate -v
 ```
 
 ## **Future Improvements**

@@ -4,8 +4,10 @@ Integration tests for expense endpoints (/me/expenses).
 These tests verify:
 - Expense CRUD operations via HTTP
 - Expense listing with pagination
-- Multi-user data isolation
 - Category-expense relationship handling
+
+NOTE: Multi-user isolation (403) tests are in unit/test_cross_user_security.py
+NOTE: Cascade delete tests are in unit/test_category_service.py
 """
 from fastapi.testclient import TestClient
 from sqlmodel import Session
@@ -56,22 +58,6 @@ class TestExpenseCreation:
         })
         
         assert response.status_code == 404
-
-    def test_create_expense_with_other_users_category_fails(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """Cannot create expense using another user's category"""
-        user2_category_id = multi_user_data.user2_travel_category.category_id
-        
-        response = user1_client.post("/me/expenses/", json={
-            "name": "Hack Attempt",
-            "amount": 100.0,
-            "category_id": user2_category_id  # User 2's category
-        })
-        
-        assert response.status_code == 403
 
 
 class TestExpenseRetrieval:
@@ -255,76 +241,6 @@ class TestExpenseDeletion:
         assert deleted is None
 
 
-class TestMultiUserExpenseIsolation:
-    """Test that users cannot access other users' expenses"""
-
-    def test_user_cannot_view_other_users_expense(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """User 1 cannot access User 2's expense"""
-        user2_expense_id = multi_user_data.user2_expenses[0].expense_id
-        
-        response = user1_client.get(f"/me/expenses/{user2_expense_id}")
-        
-        assert response.status_code == 403
-
-    def test_user_cannot_update_other_users_expense(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """User 1 cannot update User 2's expense"""
-        user2_expense_id = multi_user_data.user2_expenses[0].expense_id
-        
-        response = user1_client.put(
-            f"/me/expenses/{user2_expense_id}",
-            json={"name": "Hacked"}
-        )
-        
-        assert response.status_code == 403
-
-    def test_user_cannot_delete_other_users_expense(
-        self,
-        user1_client: TestClient,
-        multi_user_data,
-        test_db: Session
-    ):
-        """User 1 cannot delete User 2's expense"""
-        user2_expense_id = multi_user_data.user2_expenses[0].expense_id
-        
-        response = user1_client.delete(f"/me/expenses/{user2_expense_id}")
-        
-        assert response.status_code == 403
-        
-        # Verify expense still exists
-        expense = test_db.get(Expense, user2_expense_id)
-        assert expense is not None
-
-    def test_list_expenses_only_shows_own_expenses(
-        self,
-        user1_client: TestClient,
-        multi_user_data
-    ):
-        """List endpoint only returns authenticated user's expenses"""
-        response = user1_client.get("/me/expenses/")
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        # Should have user1's expenses
-        expense_names = [exp["name"] for exp in data]
-        user1_expense_names = [exp.name for exp in multi_user_data.user1_expenses]
-        for name in user1_expense_names:
-            assert name in expense_names
-        
-        # Should NOT have user2's expenses
-        user2_expense_names = [exp.name for exp in multi_user_data.user2_expenses]
-        for name in user2_expense_names:
-            assert name not in expense_names
-
-
 class TestExpenseCategoryRelationship:
     """Test that expense-category relationship is properly maintained"""
 
@@ -342,32 +258,3 @@ class TestExpenseCategoryRelationship:
         data = response.json()
         assert data["category_id"] == test_category.category_id
 
-    def test_category_deletion_affects_expenses(
-        self,
-        authenticated_client: TestClient,
-        test_custom_category: Category,
-        test_db: Session,
-        test_user
-    ):
-        """When category is deleted, its expenses are handled appropriately"""
-        # Create expense in custom category
-        expense = Expense(
-            name="Test",
-            amount=50.0,
-            category_id=test_custom_category.category_id, #type: ignore
-            user_id=test_user.user_id,
-            date_of_entry=date.today()
-        )
-        test_db.add(expense)
-        test_db.commit()
-        test_db.refresh(expense)
-        expense_id = expense.expense_id
-        
-        # Delete the category
-        authenticated_client.delete(
-            f"/me/categories/{test_custom_category.category_id}"
-        )
-        
-        # Expense should also be deleted (cascade)
-        deleted_expense = test_db.get(Expense, expense_id)
-        assert deleted_expense is None
