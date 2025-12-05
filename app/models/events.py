@@ -15,7 +15,7 @@ from ..exceptions import IntegrityExceptions
 @event.listens_for(User, 'after_insert')
 def create_default_category(mapper, connection, target):
     """
-    Automatically creates a default 'Uncategorized' category when a new user is created.
+    Automatically creates a default 'uncategorized' category when a new user is created.
     """
     category_table = Category.__table__ #type: ignore
     

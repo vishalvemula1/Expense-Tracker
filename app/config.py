@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-
+import secrets
 
 model_config = SettingsConfigDict(
     env_file=".env",
@@ -9,7 +9,7 @@ model_config = SettingsConfigDict(
     extra="ignore",
 )
 class Settings(BaseSettings):
-    SECRET_KEY: str = Field(..., min_length=1)
+    SECRET_KEY: str = Field(default_factory=lambda: secrets.token_hex(32))
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     DATABASE_URL: str = "sqlite:///database.db"
