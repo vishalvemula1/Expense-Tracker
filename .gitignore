@@ -17,6 +17,3 @@ venv/
 # Project-Specific Data
 database.db
 
-pyproject.toml
-.python-version
-uv.lock

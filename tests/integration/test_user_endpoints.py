@@ -14,10 +14,8 @@ from app.models import User
 
 
 class TestUserProfile:
-    """Test /me endpoint for retrieving user profile"""
 
     def test_get_current_user_profile(self, authenticated_client: TestClient, test_user: User):
-        """GET /me returns authenticated user's profile"""
         response = authenticated_client.get("/me")
         
         assert response.status_code == 200
@@ -30,10 +28,8 @@ class TestUserProfile:
 
 
 class TestUserUpdate:
-    """Test PUT /me for updating user profile"""
 
     def test_update_user_profile(self, authenticated_client: TestClient, test_user: User, test_db: Session):
-        """PUT /me updates user profile and persists changes"""
         response = authenticated_client.put("/me", json={
             "username": "updated_username",
             "email": "updated@example.com",
@@ -47,14 +43,12 @@ class TestUserUpdate:
         assert data["email"] == "updated@example.com"
         assert data["salary"] == 75000
         
-        # Verify changes persisted in database
         test_db.refresh(test_user)
         assert test_user.username == "updated_username"
         assert test_user.email == "updated@example.com"
         assert test_user.salary == 75000
 
     def test_partial_update_user_profile(self, authenticated_client: TestClient, test_user: User, test_db: Session):
-        """Can update only salary, leaving other fields unchanged"""
         original_username = test_user.username
         original_email = test_user.email
         
@@ -66,12 +60,11 @@ class TestUserUpdate:
         data = response.json()
         
         assert data["salary"] == 80000
-        assert data["username"] == original_username  # Unchanged
-        assert data["email"] == original_email  # Unchanged
+        assert data["username"] == original_username
+        assert data["email"] == original_email
 
 
 class TestUserDeletion:
-    """Test DELETE /me for user account deletion"""
 
     def test_delete_user_removes_from_database(
         self, 
@@ -79,20 +72,17 @@ class TestUserDeletion:
         test_user: User, 
         test_db: Session
     ):
-        """DELETE /me removes user from database"""
         user_id = test_user.user_id
         
         response = authenticated_client.delete("/me")
         
         assert response.status_code == 200
         
-        # Verify user no longer exists
         deleted_user = test_db.get(User, user_id)
         assert deleted_user is None
 
 
 class TestMultiUserIsolation:
-    """Test that users cannot access other users' profiles"""
 
     def test_user_only_sees_own_profile(
         self,
@@ -100,19 +90,15 @@ class TestMultiUserIsolation:
         user2_client: TestClient,
         multi_user_data
     ):
-        """Each user sees only their own profile via /me"""
-        # User 1 gets their profile
         response1 = user1_client.get("/me")
         assert response1.status_code == 200
         data1 = response1.json()
         assert data1["username"] == multi_user_data.user1.username
         
-        # User 2 gets their profile
         response2 = user2_client.get("/me")
         assert response2.status_code == 200
         data2 = response2.json()
         assert data2["username"] == multi_user_data.user2.username
         
-        # Profiles are different
         assert data1["user_id"] != data2["user_id"]
 

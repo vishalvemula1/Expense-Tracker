@@ -29,7 +29,6 @@ class TestUserUniqueness:
         pytest.param("TESTUSER", id="uppercase"),
     ])
     def test_duplicate_username_rejected(self, test_db: Session, test_user, username):
-        """Duplicate username (exact, whitespace, case) -> 409"""
         with pytest.raises(HTTPException) as exc:
             AuthService(test_db).create_user_with_defaults(
                 UserCreate(username=username, email="other@x.com", salary=0, password="validpass")
@@ -42,7 +41,6 @@ class TestUserUniqueness:
         pytest.param("TEST@EXAMPLE.COM", id="uppercase"),
     ])
     def test_duplicate_email_rejected(self, test_db: Session, test_user, email):
-        """Duplicate email (exact, whitespace, case) -> 409"""
         with pytest.raises(HTTPException) as exc:
             AuthService(test_db).create_user_with_defaults(
                 UserCreate(username="newuser", email=email, salary=0, password="validpass")
@@ -66,7 +64,6 @@ class TestCategoryUniqueness:
         pytest.param("  Groceries  ", id="whitespace"),
     ])
     def test_duplicate_name_same_user_rejected(self, test_db: Session, test_user, duplicate_name):
-        """Duplicate category name (exact, case, whitespace) -> 409"""
         svc = CategoryService(test_user, test_db)
         svc.create(CategoryCreate(name="Groceries"))
         
@@ -82,5 +79,5 @@ class TestCategoryUniqueness:
         svc2 = CategoryService(other_user, test_db)
         cat2 = svc2.create(CategoryCreate(name="Shared"))
         
-        assert cat2.name == "shared"  # lowercased
+        assert cat2.name == "shared"
         assert cat2.user_id == other_user.user_id

@@ -15,17 +15,12 @@ venv/
 .env.local
 
 # Project-Specific Data
-database.db
-
-pyproject.toml
-.python-version
-uv.lock
-
-Architecture.md
-
-
+.git
 _archive
 .copilot
 .vscode
 
-.git
+database.db
+Architecture.md
+
+tests

@@ -21,7 +21,6 @@ from app.services import CategoryService, ExpenseService
 
 
 class TestDefaultCategoryProtection:
-    """Verify default category cannot be modified or deleted."""
 
     @pytest.mark.parametrize("operation", [
         pytest.param(lambda svc, cat_id: svc.update(cat_id, CategoryUpdate(name="Renamed")), id="update"),
@@ -30,7 +29,6 @@ class TestDefaultCategoryProtection:
     def test_cannot_modify_default_category(
         self, test_db: Session, test_user: User, test_category: Category, operation
     ):
-        """409: Cannot update or delete the default category"""
         svc = CategoryService(test_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
@@ -39,7 +37,6 @@ class TestDefaultCategoryProtection:
         assert exc.value.status_code == 409
 
     def test_db_prevents_multiple_default_categories(self, test_db: Session, test_user: User):
-        """Database constraint prevents two default categories per user"""
         second_default = Category(
             name="second default",
             user_id=test_user.user_id,  # type: ignore
@@ -55,12 +52,10 @@ class TestDefaultCategoryProtection:
 
 
 class TestPartialUpdate:
-    """Verify partial updates preserve unspecified fields."""
 
     def test_partial_update_preserves_tag(
         self, test_db: Session, test_user: User, test_custom_category: Category
     ):
-        """Updating name should not change tag"""
         original_tag = test_custom_category.tag
         svc = CategoryService(test_user, test_db)
         
@@ -71,12 +66,10 @@ class TestPartialUpdate:
 
 
 class TestUniquenessOnUpdate:
-    """Verify uniqueness constraints on update operations."""
 
     def test_update_to_existing_name_fails(
         self, test_db: Session, test_user: User, test_custom_category: Category
     ):
-        """Cannot update category name to one that already exists (409)"""
         svc = CategoryService(test_user, test_db)
         svc.create(CategoryCreate(name="Existing Name", tag=Color.White))
         
@@ -88,7 +81,6 @@ class TestUniquenessOnUpdate:
     def test_update_to_own_name_succeeds(
         self, test_db: Session, test_user: User, test_custom_category: Category
     ):
-        """Updating category name to same value should NOT trigger uniqueness error"""
         svc = CategoryService(test_user, test_db)
         original_name = test_custom_category.name
         
@@ -99,10 +91,8 @@ class TestUniquenessOnUpdate:
 
 
 class TestCascadeDelete:
-    """Verify category deletion cascades to expenses."""
 
     def test_delete_cascades_to_expenses(self, test_db: Session, test_user: User):
-        """Deleting category removes its expenses from DB"""
         cat_svc = CategoryService(test_user, test_db)
         exp_svc = ExpenseService(test_user, test_db)
         
@@ -119,10 +109,8 @@ class TestCascadeDelete:
 
 
 class TestNotFound:
-    """Verify 404 for non-existent resources."""
 
     def test_get_nonexistent_category_returns_404(self, test_db: Session, test_user: User):
-        """Accessing category ID that doesn't exist returns 404"""
         svc = CategoryService(test_user, test_db)
         
         with pytest.raises(HTTPException) as exc:

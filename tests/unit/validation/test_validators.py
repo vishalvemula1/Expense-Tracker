@@ -152,6 +152,6 @@ class TestInputNormalization:
 
     def test_category_name_whitespace_trimmed_and_lowercased(self):
         cat = CategoryCreate(name="  Food  ")
-        assert cat.name == "food"  # lowercased
+        assert cat.name == "food"
 
 

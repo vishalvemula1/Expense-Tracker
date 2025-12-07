@@ -36,17 +36,10 @@ class CategoryRead(CategoryBase):
 class Category(CategoryBase, table=True):
     __table_args__ = (
         # Unique category name per user
-        UniqueConstraint('name', 'user_id', name='uq_category_name_user'),
-        
+        UniqueConstraint("name", "user_id", name="uq_category_name_user"),
         # Partial unique index: only one default category per user (WHERE is_default = True)
-        Index(
-            'uq_one_default_per_user',
-            'user_id',
-            'is_default',
-            unique=True,
-            sqlite_where=text('is_default = 1')
-        ),
-        CheckConstraint('name = LOWER(name)', name='ck_category_name_lowercase'),
+        Index("uq_one_default_per_user", "user_id", "is_default", unique=True, postgresql_where=text("is_default = true")),
+        CheckConstraint("name = LOWER(name)", name="ck_category_name_lowercase"),
     )
     user_id: int = Field(foreign_key="user.user_id", index=True, ondelete="CASCADE")
     category_id: int | None = Field(primary_key=True, default=None)

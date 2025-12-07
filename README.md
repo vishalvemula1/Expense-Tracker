@@ -6,7 +6,7 @@ A containerized RESTful backend built with **FastAPI**, **SQLModel**, and **Dock
 docker run -dp 8000:8000 vishalvemula1/expense-tracker
 ```
 
-API available at `http://localhost:8000`
+API available at `http://localhost:8000/docs`
 
 ---
 

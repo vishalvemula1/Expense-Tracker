@@ -24,7 +24,6 @@ from app.services import CategoryService, ExpenseService
 # ============================================================================
 
 class TestCategoryAccess:
-    """Verify users cannot access other users' categories."""
 
     @pytest.mark.parametrize("operation,args", [
         pytest.param(lambda svc, cat_id: svc.get(cat_id), (), id="get"),
@@ -36,7 +35,6 @@ class TestCategoryAccess:
         self, test_db: Session, test_user: User, other_user: User, 
         test_custom_category: Category, operation, args
     ):
-        """All operations on another user's category return 403"""
         svc = CategoryService(other_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
@@ -50,7 +48,6 @@ class TestCategoryAccess:
 # ============================================================================
 
 class TestExpenseAccess:
-    """Verify users cannot access other users' expenses."""
 
     @pytest.mark.parametrize("operation", [
         pytest.param(lambda svc, exp_id: svc.get(exp_id), id="get"),
@@ -60,7 +57,6 @@ class TestExpenseAccess:
     def test_access_other_users_expense_returns_403(
         self, test_db: Session, test_user: User, other_user: User, test_expense: Expense, operation
     ):
-        """All operations on another user's expense return 403"""
         svc = ExpenseService(other_user, test_db)
         
         with pytest.raises(HTTPException) as exc:
@@ -74,12 +70,10 @@ class TestExpenseAccess:
 # ============================================================================
 
 class TestCrossUserResourceUsage:
-    """Verify users cannot USE other users' resources as foreign keys."""
 
     def test_create_expense_with_other_users_category_fails(
         self, test_db: Session, test_user: User, other_user: User
     ):
-        """Cannot create expense using another user's category"""
         other_cat_svc = CategoryService(other_user, test_db)
         other_category = other_cat_svc.create(CategoryCreate(name="Other's Category", tag=Color.Blue))
         
@@ -97,7 +91,6 @@ class TestCrossUserResourceUsage:
     def test_update_expense_to_other_users_category_fails(
         self, test_db: Session, test_user: User, other_user: User, test_expense: Expense
     ):
-        """Cannot update expense to use another user's category"""
         other_cat_svc = CategoryService(other_user, test_db)
         other_category = other_cat_svc.create(CategoryCreate(name="Other's Category", tag=Color.Red))
         
@@ -114,12 +107,10 @@ class TestCrossUserResourceUsage:
 # ============================================================================
 
 class TestListIsolation:
-    """Verify list operations only return current user's data."""
 
     def test_list_categories_excludes_other_users(
         self, test_db: Session, test_user: User, other_user: User
     ):
-        """Category list should not include other user's categories"""
         cat_svc1 = CategoryService(test_user, test_db)
         cat_svc2 = CategoryService(other_user, test_db)
         
@@ -134,7 +125,6 @@ class TestListIsolation:
     def test_list_expenses_excludes_other_users(
         self, test_db: Session, test_user: User, other_user: User, test_category: Category
     ):
-        """Expense list should not include other user's expenses"""
         exp_svc1 = ExpenseService(test_user, test_db)
         exp_svc2 = ExpenseService(other_user, test_db)
         

@@ -14,7 +14,6 @@ from app.models import Category, Expense
 
 
 class TestCategoryCreation:
-    """Test POST /me/categories"""
 
     def test_create_category_persists_to_database(
         self, 
@@ -22,7 +21,6 @@ class TestCategoryCreation:
         test_user,
         test_db: Session
     ):
-        """Creating category via API persists to database"""
         response = authenticated_client.post("/me/categories/", json={
             "name": "Entertainment",
             "tag": "Blue"
@@ -31,26 +29,23 @@ class TestCategoryCreation:
         assert response.status_code == 200
         data = response.json()
         
-        assert data["name"] == "entertainment"  # lowercased
+        assert data["name"] == "entertainment"
         assert data["tag"] == "Blue"
         assert "category_id" in data
         
-        # Verify in database
         category = test_db.get(Category, data["category_id"])
         assert category is not None
-        assert category.name == "entertainment"  # lowercased
+        assert category.name == "entertainment"
         assert category.user_id == test_user.user_id
 
 
 class TestCategoryRetrieval:
-    """Test GET /me/categories/{category_id}"""
 
     def test_get_category_by_id(
         self,
         authenticated_client: TestClient,
         test_custom_category: Category
     ):
-        """Can retrieve specific category by ID"""
         response = authenticated_client.get(
             f"/me/categories/{test_custom_category.category_id}"
         )
@@ -62,14 +57,12 @@ class TestCategoryRetrieval:
         assert data["name"] == test_custom_category.name
 
     def test_get_nonexistent_category_fails(self, authenticated_client: TestClient):
-        """Getting non-existent category returns 404"""
         response = authenticated_client.get("/me/categories/99999")
         
         assert response.status_code == 404
 
 
 class TestCategoryListing:
-    """Test GET /me/categories/ with pagination"""
 
     def test_list_categories_default_pagination(
         self,
@@ -77,16 +70,14 @@ class TestCategoryListing:
         test_category: Category,
         test_custom_category: Category
     ):
-        """List categories returns categories for authenticated user"""
         response = authenticated_client.get("/me/categories/")
         
         assert response.status_code == 200
         data = response.json()
         
         assert isinstance(data, list)
-        assert len(data) >= 2  # At least default + custom category
+        assert len(data) >= 2
         
-        # Verify categories belong to user
         category_names = [cat["name"] for cat in data]
         assert test_category.name in category_names
         assert test_custom_category.name in category_names
@@ -97,7 +88,6 @@ class TestCategoryListing:
         test_category: Category,
         test_custom_category: Category
     ):
-        """Limit parameter controls number of results"""
         response = authenticated_client.get("/me/categories/?limit=1")
         
         assert response.status_code == 200
@@ -107,7 +97,6 @@ class TestCategoryListing:
 
 
 class TestCategoryUpdate:
-    """Test PUT /me/categories/{category_id}"""
 
     def test_update_category_persists_changes(
         self,
@@ -115,7 +104,6 @@ class TestCategoryUpdate:
         test_custom_category: Category,
         test_db: Session
     ):
-        """Updating category via API persists changes"""
         response = authenticated_client.put(
             f"/me/categories/{test_custom_category.category_id}",
             json={"name": "Updated Name", "tag": "Red"}
@@ -124,17 +112,15 @@ class TestCategoryUpdate:
         assert response.status_code == 200
         data = response.json()
         
-        assert data["name"] == "updated name"  # lowercased
+        assert data["name"] == "updated name"
         assert data["tag"] == "Red"
         
-        # Verify in database
         test_db.refresh(test_custom_category)
-        assert test_custom_category.name == "updated name"  # lowercased
+        assert test_custom_category.name == "updated name"
         assert test_custom_category.tag == "Red"
 
 
 class TestCategoryDeletion:
-    """Test DELETE /me/categories/{category_id}"""
 
     def test_delete_category_removes_from_database(
         self,
@@ -142,20 +128,17 @@ class TestCategoryDeletion:
         test_custom_category: Category,
         test_db: Session
     ):
-        """Deleting category removes it from database"""
         category_id = test_custom_category.category_id
         
         response = authenticated_client.delete(f"/me/categories/{category_id}")
         
         assert response.status_code == 200
         
-        # Verify category deleted
         deleted = test_db.get(Category, category_id)
         assert deleted is None
 
 
 class TestCategoryExpenses:
-    """Test GET /me/categories/{category_id}/expenses"""
 
     def test_get_category_expenses(
         self,
@@ -163,7 +146,6 @@ class TestCategoryExpenses:
         test_category: Category,
         test_expense: Expense
     ):
-        """Can retrieve all expenses for a category"""
         response = authenticated_client.get(
             f"/me/categories/{test_category.category_id}/expenses"
         )
@@ -174,7 +156,6 @@ class TestCategoryExpenses:
         assert isinstance(data, list)
         assert len(data) >= 1
         
-        # Verify expense data
         expense_ids = [exp["expense_id"] for exp in data]
         assert test_expense.expense_id in expense_ids
 
