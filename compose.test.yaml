@@ -1,0 +1,37 @@
+services:
+  app_test:
+    build: .
+    command: [ "pytest", "tests/", "-q" ]
+
+    env_file:
+      - .env
+
+    environment:
+      TEST_DATABASE_URL: postgresql://test_user:test_password@tests_db:5432/test_db
+
+    depends_on:
+      tests_db:
+        condition: service_healthy
+
+  tests_db:
+    image: postgres:16-alpine
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=none"
+      - "-c"
+      - "log_min_messages=PANIC"
+
+    ports:
+      - "5433:5432"
+
+    environment:
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_USER: test_user
+      POSTGRES_DB: test_db
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U test_user -d test_db" ]
+      interval: 2s
+      timeout: 5s
+      retries: 10

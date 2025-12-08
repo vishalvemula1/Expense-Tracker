@@ -3,19 +3,16 @@ from .config import settings
 from typing import Annotated
 from fastapi import Depends
 
-sqlite_file_name = "database.db"
-sqlite_url = settings.DATABASE_URL
-
-
-connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
-engine = create_engine(sqlite_url, connect_args = connect_args)
+engine = create_engine(settings.DATABASE_URL)
 
 
 def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
 
+
 def get_session():
     with Session(engine) as session:
         yield session
+
 
 SessionDep = Annotated[Session, Depends(get_session)]

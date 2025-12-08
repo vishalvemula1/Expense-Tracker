@@ -1,30 +1,41 @@
 # **Expense Tracker API**
 
-A containerized RESTful backend built with **FastAPI**, **SQLModel**, and **Docker**. Clean architecture, proper test pyramid (118 tests), and security by design.
+A containerized RESTful backend built with **FastAPI**, **SQLModel**, **PostgreSQL**, and **Docker Compose**. Clean architecture, proper test pyramid (118 tests), and security by design.
+
+## **Quick Start**
 
 ```bash
-docker run -dp 8000:8000 vishalvemula1/expense-tracker
+git clone https://github.com/vishalvemula1/expense-tracker.git
+cd expense-tracker
+cp .env.example .env
+docker compose up
 ```
 
 API available at `http://localhost:8000/docs`
 
 ---
 
+## **Running Tests**
+
+```bash
+docker compose -f compose.test.yaml up --build
+```
+
+
 ## **Highlights**
 
-* **Fully Containerized**—Zero-config deployment with Docker
+* **Fully Containerized**—Zero-config deployment with Docker Compose
 * **118 Tests**—85 unit + 33 integration, proper test pyramid
 * **JWT Authentication**—Token-based auth with secure password hashing
 * **Multi-User Isolation**—Ownership validated at service layer; cross-user exploits impossible by design
 * **`/me` Endpoint Design**—Eliminates user-parameter vulnerabilities entirely
-* **Default Category Provisioning**—Auto-generated, write-protected "Uncategorized" per user
 
 ## **Tech Stack**
 
 * FastAPI
 * SQLModel (SQLAlchemy + Pydantic)
-* Docker
-* SQLite (dev) / PostgreSQL-ready
+* Docker Compose
+* PostgreSQL
 * JWT for auth
 * Pytest
 
@@ -92,10 +103,13 @@ expense_tracker/
 │   ├── models/          # SQLModel schemas with validation
 │   ├── routers/         # FastAPI route handlers
 │   ├── services/        # Business logic layer
-│   ├── auth.py          # JWT authentication
+│   ├── auth.py          # JWT token creation/validation
+│   ├── config.py        # Environment settings
+│   ├── database.py      # PostgreSQL engine & session
 │   ├── dependencies.py  # Dependency injection
-│   ├── exceptions.py    # Error handling
-│   └── main.py          # App entry point
+│   ├── exceptions.py    # Error handling & db_transaction
+│   ├── main.py          # App entry point
+│   └── security.py      # Password hashing utilities
 ├── tests/
 │   ├── unit/
 │   │   ├── services/    # Service layer tests
@@ -103,48 +117,12 @@ expense_tracker/
 │   │   └── security/    # Multi-tenancy tests
 │   ├── integration/     # End-to-end HTTP tests
 │   └── conftest.py      # Shared fixtures
+├── compose.yaml         # App + PostgreSQL services
+├── compose.test.yaml    # Test runner + test database
 ├── Dockerfile
-└── database.db
-```
-
-## **Running Tests**
-
-```bash
-# Docker
-docker run vishalvemula1/expense-tracker pytest -q
-
-# Local
-pytest                          # All tests
-pytest tests/unit/              # Unit only
-pytest tests/integration/       # Integration only
-pytest --cov=app                # With coverage
-```
-
-<summary><strong>Local Development Setup</strong></summary>
-
-```bash
-git clone https://github.com/vishalvemula1/expense-tracker.git
-cd expense-tracker
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-Create `.env`:
-
-```bash
-SECRET_KEY=your_secret_key_here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
-
-Run:
-
-```bash
-uvicorn app.main:app --reload
+└── .env.example         # Environment template
 ```
 
 
 ## **Future Improvements**
-* PostgreSQL migration 
 * Cloud deployment
