@@ -1,7 +1,7 @@
-from .user import UserBase, UserCreate, UserRead, User, UserUpdate
-from .expense import ExpenseBase, ExpenseCreate, ExpenseUpdate, Expense, ExpenseRead
-from .token import Token
-from .category import Category, CategoryBase, CategoryCreate, CategoryUpdate, CategoryRead
+from .user_models import UserBase, UserCreate, UserRead, User, UserUpdate
+from .expense_models import ExpenseBase, ExpenseCreate, ExpenseUpdate, Expense, ExpenseRead
+from .token_models import Token
+from .category_models import Category, CategoryBase, CategoryCreate, CategoryUpdate, CategoryRead
 
 __all__ = [
     "UserBase", "UserCreate", "UserRead", "User", "UserUpdate",

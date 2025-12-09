@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from fastapi import HTTPException
 
 from app.models import User, UserCreate, UserUpdate, Category, Expense, CategoryCreate, ExpenseCreate
-from app.models.category import Color
+from app.models.category_models import Color
 from app.services import AuthService, UserService, CategoryService, ExpenseService
 
 

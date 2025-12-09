@@ -1,6 +1,6 @@
 from sqlalchemy import event
-from .user import User
-from .category import Category
+from .user_models import User
+from .category_models import Category
 from ..config import default_categories as defaults
 from datetime import date
 from ..exceptions import IntegrityExceptions

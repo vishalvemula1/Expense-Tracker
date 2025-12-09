@@ -15,7 +15,7 @@ from app.models import (
     User, Category, CategoryCreate, CategoryUpdate,
     Expense, ExpenseCreate, ExpenseUpdate
 )
-from app.models.category import Color
+from app.models.category_models import Color
 from app.services import CategoryService, ExpenseService
 
 

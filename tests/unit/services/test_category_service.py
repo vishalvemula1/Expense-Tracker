@@ -16,7 +16,7 @@ from fastapi import HTTPException
 from datetime import date
 
 from app.models import User, Category, CategoryCreate, CategoryUpdate, ExpenseCreate, Expense
-from app.models.category import Color
+from app.models.category_models import Color
 from app.services import CategoryService, ExpenseService
 
 

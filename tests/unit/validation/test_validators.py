@@ -14,7 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.models import UserCreate, CategoryCreate, ExpenseCreate
-from app.models.category import Color
+from app.models.category_models import Color
 
 
 # ============================================================================
