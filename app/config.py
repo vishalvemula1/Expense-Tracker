@@ -8,7 +8,7 @@ model_config = SettingsConfigDict(
     case_sensitive=True,
     extra="ignore",
     env_file_ignore_missing=True,
-)
+) #type: ignore
 
 
 class Settings(BaseSettings):

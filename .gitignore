@@ -14,4 +14,5 @@ venv/
 .env
 .env.local
 
-
+# Local compose file
+compose.db.yaml

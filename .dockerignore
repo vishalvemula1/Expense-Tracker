@@ -14,10 +14,16 @@ venv/
 .env
 .env.local
 
-# Project-Specific Data
+# Version control and editor files
 .git
 _archive
 .copilot
 .vscode
 
+# Docker compose
+compose.test.yaml
+compose.db.yaml
+compose.yaml
+
+# Project specific file
 Architecture.md
