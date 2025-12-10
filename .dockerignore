@@ -6,6 +6,16 @@ __pycache__/
 *.pyo
 .pytest_cache
 
+#git
+.git
+.gitignore
+
+# Compose + infra
+docker-compose*.yml
+compose*.yml
+*.compose
+*.compose.yaml
+
 # Virtual Environments
 venv/
 .venv/
@@ -13,11 +23,12 @@ venv/
 # Environment Variables
 .env
 .env.local
+.env.example
 
 # Project-Specific Data
-.git
 _archive
 .copilot
 .vscode
 
+README.md
 Architecture.md

@@ -18,9 +18,16 @@ services:
     volumes:
       - .:/app
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+
   db:
     image: postgres:16-alpine
-    command: ["postgres", "-c", "log_statement=none"]
+    command: [ "postgres", "-c", "log_statement=none" ]
     ports:
       - "5432:5432"
 
